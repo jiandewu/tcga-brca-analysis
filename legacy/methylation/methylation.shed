@@ -1,0 +1,30 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation  
+╰─$ find . -type f -name "*_hg38.txt" -exec mv {} ./ \;
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation  
+╰─$ head -9 ../combi_gene_exp/pomelo_tripnega_TPM/00clin_trip.txt | tail -1 | cut -f2-112 | tr '\t' '\n' | tr '[:lower:]' '[:upper:]' | sed 's/$/\*\.txt/' > listTNBC.txt
+  $ rsync --remove-source-files -aP --include-from=TNBClist.txt --exclude='*' ./ ./TNBC
+╰─$ head -9 ../combi_gene_exp/pomelo_tripnega_TPM/00clin_ep.txt | tail -1 | cut -f2- | sed 's/\tNA.*//' | tr '\t' '\n' | tr '[:lower:]' '[:upper:]' | sed 's/$/\*\.txt/' > listERBC.txt
+  $ mkdir ERBC
+  $ rsync --remove-source-files -aP --include-from=ERBClist.txt --exclude='*' ./ ./ERBC
+
+╰─$ mv TCGA-*-11[AB]-*.txt ./Normal 
+╰─$ mv ERBC/TCGA-*-11[AB]-*.txt ./Normal/ERBC 
+╰─$ mv TNBC/TCGA-*-11[AB]-*.txt ./Normal/TNBC   
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/TNBC or ERBC or Normal
+╰─$ while read -r file; do 
+sed -i "0,/Beta_value/s//${file##*/}/" "$file"
+done < <(find . -type f)
+
+╰─$ paste <(cut -f6 ../TCGA-A7-A0D9-01A-31D-A10P.txt | awk '{split($1, valueArray,";");print valueArray[1]}') <(awk -F $'\t' 'BEGIN{OFS = FS}{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^\t/,"",_[i]); print _[i]}}' **/TCGA-*.txt) | awk -F $'\t' '(gsub(/NA/,"0")<8 && $1 !="."){print}' | body sort -u -k 1,1 | sed -e '1s/-...-...-....\.txt\>//g' > ./combin.txt
+
+╰─$ paste <(cut -f1 ../TCGA-A7-A0D9-01A-31D-A10P.txt) <(awk -F $'\t' 'BEGIN{OFS = FS}{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^\t/,"",_[i]); print _[i]}}' **/TCGA-*.txt) | awk -F $'\t' '(gsub(/NA/,"0")<8 && $1 !="."){print}' | body sort -u -k 1,1 | sed -e '1s/-...-...-....\.txt\>//g' > ./combin_prob.txt
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/TNBC  
+╰─$ cut -f1-112 /home/jiande/prjs/BreastTumor/combi_gene_exp/pomelo_tripnega_TPM/00clin_trip.txt | sed -e '1,8d;10,30d' > GEtrip.txt
+
+╰─$ cat <(head -1 GEtrip.txt | tr '[:lower:]' '[:upper:]') <(join -1 1 -2 1 -t $'\t' <(sort -k 1,1 /home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) <(paste <(cut -f1 GEtrip.txt | awk -F '\t' 'BEGIN{OFS="\t";} { sub(/\..+$/, "", $1) }1') GEtrip.txt | sort -k 1,1) | cut -f5,7-) | sed -e '0,/PATIENT.BCR_PATIENT_BARCODE/s//GENE_SYMBOL/' | body sort -u -k 1,1 > GEtrip_syb.txt
+

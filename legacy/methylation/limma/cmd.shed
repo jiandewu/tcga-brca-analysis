@@ -1,0 +1,80 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma  
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../Normal/combin_prob.txt) <(body sort -k 1,1 < ../TNBC/combin_prob.txt) > normal_TNBC.txt
+
+╰─$ head -1 normal_TNBC.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<97){print $0 "\tNormal"}else{print $0 "\tTNBC"}}' | sed -e '1isample\tclass' > normal_TNBC_pheno.txt 
+
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../Normal/combin_prob.txt) <(body sort -k 1,1 < ../ERBC/combin_prob.txt) > normal_ERBC.txt
+
+╰─$ head -1 normal_ERBC.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<97){print $0 "\tNormal"}else{print $0 "\tERBC"}}' | sed -e '1isample\tclass' > normal_ERBC_pheno.txt 
+
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../TNBC/combin_prob.txt) <(body sort -k 1,1 < ../ERBC/combin_prob.txt) > TNBC_ERBC.txt
+
+╰─$ head -1 TNBC_ERBC.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<81){print $0 "\tTNBC"}else{print $0 "\tERBC"}}' | sed -e '1isample\tclass' > TNBC_ERBC_pheno.txt 
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma  
+╰─$  paste <(cut -f1 ../TCGA-A7-A0D9-01A-31D-A10P.txt) <(cut -f6 ../TCGA-A7-A0D9-01A-31D-A10P.txt | awk -F ';' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/RemoveDupField.awk) | awk '($2!='.'){print}' > prob_gengsym_orig.txt 
+
+#cut -f2 prob_gengsym_orig.txt | tail -n+2 | tr ';' '\n' | awk -F '.' '(NR>1){print $1}' | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Sites' > prob_gengsym_sitecount.txt
+
+awk -F $'\t' '{split($2,genes,";");for(i in genes){split(genes[i],g,".");split(g[1],gg,"-");print $1 "\t" gg[1]}}' OFS='\t' prob_gengsym_orig.txt | body sort -k2,2 > prob_gengsym.txt
+grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) prob_gengsym.txt | sort -k2,2 | sed -e '1iComposite Element REF\tGene' > prob_gengsym_Grch38.txt
+cut -f2 prob_gengsym_Grch38.txt | tail -n+2 | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Sites' > prob_gengsym_sitecount_Grch38.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../prob_gengsym_Grch38.txt) <(sed -e '1s/^/Composite Element REF\t/' normal_TNBC_p.txt | body sort -k 1,1) | awk -F $'\t' '($2!="."){print}' > normal_TNBC_p_gene.txt
+
+cut -f2 normal_TNBC_p_gene.txt | tail -n+2 | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Count(lgFC=0.25,pval<.001)' > Methylation_genes.txt
+
+#cut -f2 normal_TNBC_p_gene.txt | tr ';' '\n' | body sort | uniq > genelist.txt
+
+#awk -F '.' '{print $1}' genelist.txt | tail -n+1 | sort | uniq > methy_genes.txt
+
+#cut -f1 /home/jiande/prjs/BreastTumor/limma/results/TNBC_normal_p_fc1_gene.txt | tail -n+1 | awk -F '.' '{print $1}' | awk -F '-' '{print $1}' | sort | uniq > RNAseq_genes.txt
+
+cut -f1,6 /home/jiande/prjs/BreastTumor/limma/results/TNBC_normal_p_fc1_gene.txt | awk -F $'\t' '(NR>1){split($1,a,".");split(a[1],b,"-");$1=b[1];print}' OFS='\t' | sort -u -k1,1 | sed -e '1iGene\tRNA-seq(lgFC=1)' > RNAseq_genes.txt
+
+╰─$ awk -F $'\t' '(NR>1&&$2>0){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | awk -F $'\t' '{split($1,a,".");split(a[1],b,"-");$1=b[1];print}' OFS='\t' | sort -u -k1,1 | sed -e '1iGene\tSomatic Count(99 Samples)' > Somatic_genes.txt
+
+╰─$ awk -F '.' '{print $1,1}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas_trip.txt | awk -F $'\t' '{split($1,a,".");split(a[1],b,"-");$1=b[1];print}' OFS='\t' | sort -u -k1,1 | sed -e '1iGene\tGermline Count' > Gwas_genes.txt
+
+╰─$ /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/full-outer-join.awk HEADER=1 ../prob_gengsym_sitecount_Grch38.txt Methylation_genes.txt Somatic_genes.txt Gwas_genes.txt RNAseq_genes.txt | awk -F $'\t' '($3!="NULL"||$4!="NULL"||$5!="NULL"||$6!="NULL"){print}' OFS='\t' | body grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) > all.txt
+
+cut -f1,3 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > methy_list.txt
+cut -f1,4 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > somatic_list.txt
+cut -f1,5 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > germline_list.txt
+cut -f1,6 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > RNAseq_list.txt
+
+cut -f1,3- all.txt | awk -F $'\t' '($2!="NULL"&&$3!="NULL"&&$4!="NULL"&&$5!="NULL"){print}' | body sort -k2,2nr > all_intersection.txt
+
+
+
+╰─$ sed -n '1,2p;8,11p;15p;16q' /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.merged_only_clinical_clin_format_cut.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Rows.awk first=3 second=4 | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Rows.awk first=2 second=5 | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Rows.awk first=1 second=6 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 > TNBC_race.txt
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Mutation_Packager_Oncotated_Calls.Level_3.2016012800.0.0/trip/triplist.txt TNBC_race.txt | head -1 | tr '\t' '\n' > TNBC_race_Somatic.txt
+
+#╰─$ tail -1 TNBC_race_hasSomaticInfo.txt | tr '\t' '\n' | sort | uniq -c > TNBC_race_hasSomaticInfo_group.txt
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk <(ls /home/jiande/prjs/BreastTumor/methylation/TNBC/TCGA-* | awk -F'/' '{print $NF}' | tr '\t' '\n' | cut -c1-12 | tr '[:upper:]' '[:lower:]') TNBC_race.txt | head -1 | tr '\t' '\n' > TNBC_race_Methy.txt
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk <(cut -f2 /home/jiande/prjs/BreastTumor/Tumor-txt/TNBClist_patientid.txt) <(awk -f  /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Rows.awk first=1 second=3 TNBC_race.txt) | head -3 | tail -1 | tr '\t' '\n' > TNBC_race_RNAseq.txt
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk <(comm -12 TNBC_race_Somatic.txt <(comm -12 TNBC_race_Methy.txt TNBC_race_RNAseq.txt)) TNBC_race.txt | tail -1 | tr '\t' '\n' | sort | uniq -c > TNBC_race_group.txt
+
+
+#!/bin/bash
+grep -wFf <(cut -f1 all_intersection.txt | tail -n+2 | sed -e '1iHugo_Symbol') /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/Variant_Type.txt | awk -F $'\t' '(NR==1){split($0,a,"\t");next};{s2=""; for(i=2;i<=NF;i++) if ($i!="") s2=s2 (s2?";":"") a[i]; print $1,s2}' OFS='\t' | 
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    gene=${line%%TCGA*01}
+    files=${line#$gene}
+    for i in $(echo $files | tr ";" "\n"); do
+        grep $gene /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Mutation_Packager_Oncotated_Calls.Level_3.2016012800.0.0/trip/${i}.hg19.oncotator.hugo_entrez_remapped.maf.txt | cut -f1,5-7
+    done
+done | 
+uniq | sed -e '1igene\tChromosome\tStart\tEnd' > all_intersection_mut_position.txt
+
+join -1 1 -2 1 -t $'\t' <(grep -wFf <(cut -f1 all_intersection.txt) normal_TNBC_p_gene.txt | cut -f1,2 | body sort -k1,1) /home/jiande/prjs/BreastTumor/methylation/TCGA-A7-A0D9-01A-31D-A10P.txt | cut -f1,2,4-6 | body sort -k2,2 > all_intersection_methy_position.txt
+
+cat <(cut -f2-4 all_intersection_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 all_intersection_mut_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Columns.awk i=1 j=2 > all_intersection_position.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
+╰─$ Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/BreastCancerPrj/methylation/limma/lolliplot_batch.r 

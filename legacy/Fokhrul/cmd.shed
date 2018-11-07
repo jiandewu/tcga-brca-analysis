@@ -1,0 +1,57 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/HicksRaw  
+...................................
+╰─$ sed -e '1,29d;31,64d' NORMAL-ERP-CHEN_RAW_DATA_GSE10780_series_matrix.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/Fokhrul/ExtractColumns.awk FS='\t' | tail -n+2 | head -n-1 | sed 's/"//g' > normal.txt
+##.......or
+╰─$ sed -e '1,38d;40,64d' NORMAL-ERP-CHEN_RAW_DATA_GSE10780_series_matrix.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/Fokhrul/ExtractColumns.awk FS='\t' | tail -n+2 | head -n-1 | sed 's/"//g' > normal2.txt
+
+## wrong
+╰─$ head -n64 TNBC_RAW_DATA1_195SAMPLES_GSE76124_series_matrix.txt | tail -n4 | cut -f2- | tr '\r\n' '\t' > subtype.txt
+................................
+╰─awk 'BEGIN{FS=",";OFS = '\t'}{for(i=1;i<=NF;++i)if($i~/^tnbc\ subtype.+/)print $i}' subtype.csv | tr '\n' '\t' > subtypetnbc.txt 
+
+╰─$ cat subtypetnbc.txt <(sed  -e '1,87d' TNBC_RAW_DATA1_195SAMPLES_GSE76124_series_matrix.txt) > TNBC_RAW_DATA1_195SAMPLES_GSE76124_series_matrix_clear.txt
+
+................
+╰─$ awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/Fokhrul/ExtractColumns.awk FS='\t' TNBC_RAW_DATA1_195SAMPLES_GSE76124_series_matrix_clear.txt | tail -n+2 | head -n-1 > BLIS.txt 
+.....................
+╰─$ awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/Fokhrul/ExtractColumns.awk FS='\t' TNBC_RAW_DATA1_195SAMPLES_GSE76124_series_matrix_clear.txt | tail -n+2 | head -n-1 > BLIA.txt 
+
+
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k 1,1 BLIS.txt) <(sort -k 1,1 normal.txt) > BLIS_normal.txt
+..............move last line to first
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k 1,1 BLIA.txt) <(sort -k 1,1 normal.txt) > BLIA_normal.txt
+.......................
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k 1,1 BLIA.txt) <(sort -k 1,1 BLIS.txt) > BLIA_BLIS.txt
+.......................
+
+
+╰─$ head -1 BLIA_normal.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<55){print $0 "\tBLIA"}else{print $0 "\tNormal"}}' | sed -e '1isample\tclass' > BLIA_normal_pheno.txt 
+╰─$ head -1 BLIS_normal.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<61){print $0 "\tBLIS"}else{print $0 "\tNormal"}}' | sed -e '1isample\tclass' > BLIS_normal_pheno.txt 
+╰─$ head -1 BLIA_BLIS.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<55){print $0 "\tBLIA"}else{print $0 "\tBLIS"}}' | sed -e '1isample\tclass' > BLIA_BLIS_pheno.txt 
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/HicksRaw/result  
+╰─$ cut -f1 BLIA_normal_p.txt | tail -n+2 > BLIA_normal_ProbeID.txt
+╰─$ cut -f1 BLIS_normal_p.txt | tail -n+2 > BLIS_normal_ProbeID.txt
+╰─$ cut -f1 BLIA_BLIS_p_lfc2.txt | tail -n+2 > BLIA_BLIS_ProbeID.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/HicksRaw/result  
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k1,1 BLIA_normal_ProbeID.txt | sed -e '1iProbe Set ID') <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) | awk -F $'\t' '($2!="---"){print $2,$1}' OFS=$'\t' | body sort -u -k 1,1 > BLIA_normal_ProbeID_genes.txt
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k1,1 BLIS_normal_ProbeID.txt | sed -e '1iProbe Set ID') <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) | awk -F $'\t' '($2!="---"){print $2,$1}' OFS=$'\t' | body sort -u -k 1,1 > BLIS_normal_ProbeID_genes.txt
+╰─$ join -1 1 -2 1 -t $'\t' <(sort -k1,1 BLIA_BLIS_ProbeID.txt | sed -e '1iProbe Set ID') <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) | body sort -u -k 1,1 > BLIA_BLIS_ProbeID_genes.txt
+
+╰─$ cut -f1 BLIA_normal_ProbeID_genes.txt | tail -n+2 > BLIA_normal_genes.txt    
+╰─$ cut -f1 BLIS_normal_ProbeID_genes.txt | tail -n+2 > BLIS_normal_genes.txt    
+
+
+╰─$ cat <(head -1 BLIA_normal_exp.txt) <(grep -wFf BLIA_normal_exp_genes-BLIS.txt BLIA_normal_exp.txt) > BLIA_normal_exp-BLIS.txt
+╰─$ cat <(head -1 BLIS_normal_exp.txt) <(grep -wFf BLIS_normal_exp_genes-BLIA.txt BLIS_normal_exp.txt) > BLIS_normal_exp-BLIA.txt
+╰─$ cat <(head -1 ../BLIA_BLIS.txt) <(grep -wFf <(cat BLIS_normal_exp_genes-BLIA.txt BLIA_normal_exp_genes-BLIS.txt) ../BLIA_BLIS.txt) > BLIA_BLIS_exp-comm.txt
+
+## BLIS_normal_genes_BLIA1.txt from venn
+╰─$ sed -e 's/ \/\/\/ /;/g' < BLIS_normal_genes-BLIA1.txt | tr ' ' '\n' | sed -e 's/;/ \/\/\/ /g' > BLIS_normal_genes-BLIA.txt && rm BLIS_normal_genes-BLIA1.txt 
+╰─$ sed -e 's/ \/\/\/ /;/g' < BLIA_normal_genes-BLIS1.txt | tr ' ' '\n' | sed -e 's/;/ \/\/\/ /g' > BLIA_normal_genes-BLIS.txt && rm BLIA_normal_genes-BLIS1.txt 
+
+join -1 1 -2 1 -t $'\t' <(grep -wFf BLIA_normal_genes-BLIS.txt BLIA_normal_ProbeID_genes.txt | awk -F $'\t' '{print $2,$1}' OFS=$'\t' | sort -k1,1 | sed -e '1iID_REF\tGene_Sym') <(body sort -k1,1 < BLIA_normal_exp.txt) | cut -f2- > BLIA_normal_exp_genes-BLIS.txt
+
+join -1 1 -2 1 -t $'\t' <(grep -wFf BLIS_normal_genes-BLIA.txt BLIS_normal_ProbeID_genes.txt | awk -F $'\t' '{print $2,$1}' OFS=$'\t' | sort -k1,1 | sed -e '1iID_REF\tGene_Sym') <(body sort -k1,1 < BLIS_normal_exp.txt) | cut -f2- > BLIS_normal_exp_genes-BLIA.txt

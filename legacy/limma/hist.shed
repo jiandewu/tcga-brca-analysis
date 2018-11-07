@@ -1,0 +1,45 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Mutation_Packager_Oncotated_Calls.Level_3.2016012800.0.0/trip  
+╰─$ find . -name "TCGA*.txt" -printf "%f\n" | sed 's/-01.hg19.oncotator.hugo_entrez_remapped.maf.txt//' | tr '[:upper:]' '[:lower:]' > triplist.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Mutation_Packager_Oncotated_Calls.Level_3.2016012800.0.0/trip  
+╰─$ awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk FS='\t' triplist.txt <(cat <(head -8 /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.merged_only_clinical_clin_format_cut.txt | tail -1) <(head -7 /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.merged_only_clinical_clin_format_cut.txt) <(tail -n+9 /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.merged_only_clinical_clin_format_cut.txt)) > tmp.txt
+
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/Tumor-txt  
+╰─$ cut -f2-112 /home/jiande/prjs/BreastTumor/combi_gene_exp/pomelo_tripnega_TPM/00clin_trip.txt | head -2 | tail -1 | tr '\t' '\n' > /home/jiande/prjs/BreastTumor/Tumor-txt/TNBClist.txt
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/Tumor-txt/TNBC  
+╰─$ cat TNBClist.txt | xargs mv -t TNBC/
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/Tumor-txt/TNBC or /home/jiande/prjs/BreastTumor/Normal-txt
+╰─$ while read -r file; do 
+sed -i "1iID\t${file##*/}" "$file"
+done < <(find . -type f -name "*.FPKM.txt")
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/Tumor-txt/TNBC or /home/jiande/prjs/BreastTumor/Normal-txt
+╰─$ /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/joinmult.sh *.FPKM.txt | tr ' ' '\t' > all.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/limma  
+╰─$ join /home/jiande/prjs/BreastTumor/Tumor-txt/TNBC/all.txt /home/jiande/prjs/BreastTumor/Normal-txt/all.txt | tr ' ' '\t' > TNBC110_Normal113.txt
+
+╰─$ awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/BreastCancerPrj/20181010/remove0rows.awk TNBC110_Normal113.txt > TNBC110_Normal113_remove.txt
+
+
+╰─$ head -1 TNBC110_Normal113.txt | tr '\t' '\n' | tail -n+2 | awk '{if(NR<111){print $0 "\tTNBC"}else{print $0 "\tNormal"}}' | sed -e '1isample\tclass' > TNBC110_Normal113_pheno.txt 
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/limma/results  
+╰─$ sed -i '1s/^/Gene stable ID\t/' TNBC_normal_exp_fc1.txt
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) <(paste <(cut -f1 TNBC_normal_exp_fc1.txt | awk -F '\t' 'BEGIN{OFS="\t";} { sub(/\..+$/, "", $1) }1') TNBC_normal_exp_fc1.txt | body sort -k 1,1) | cut -f5,7- > TNBC_normal_exp_fc1_gene.txt
+
+╰─$ sed -i '1s/^/Gene stable ID\t/' TNBC_normal_p_fc1.txt
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) <(paste <(cut -f1 TNBC_normal_p_fc1.txt | awk -F '\t' 'BEGIN{OFS="\t";} { sub(/\..+$/, "", $1) }1') TNBC_normal_p_fc1.txt | body sort -k 1,1) | cut -f5,7- > TNBC_normal_p_fc1_gene.txt
+
+╰─$ tail -n+2 TNBC_normal_exp_fc1_gene.txt | cut -f1 | sort | uniq > TNBC_normal_gene_fc1.txt 
+
+╰─$ comm -12 <(comm -12 <(sort -k1,1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip_mu01.txt) <(sort -k1,1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip_gwas-33.txt)) <(sort -k1,1 TNBC_normal_gene_fc1.txt) > Gwas_Somatic_Rna_fc1.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k1,1 </home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt) <(join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/cytoband.txt) <(cat <(head -1 TNBC_normal_p_fc1_gene.txt) <(grep -wFf Gwas_Somatic_Rna_fc1.txt TNBC_normal_p_fc1_gene.txt) | sed -e '1s/Gene name/Symbol/' |body sort -k 1,1) | cut -f1-3,6,7 | sed -e '1s/Symbol/Hugo_sym/') | cut -f 1,2,6- | sed -e '1s/Mut_count/Somatic/' -e '1s/Hugo_sym/Genes/' -e '1s/Chromosome/Cytoband/' | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Columns.awk i=2 j=7 | cut -f1,3- | body sort -k6,6nr > Gwas_Somatic_Rna_p_fc1.txt
+
+# swap two columns
+# join -t $'\t' -o 1.1,1.3,1.4,1.5,1.6,1.2 Gwas_Somatic_Rna_p_fc1.txt Gwas_Somatic_Rna_p_fc1.txt > Gwas_Somatic_Rna_p_fc1_1.txt
