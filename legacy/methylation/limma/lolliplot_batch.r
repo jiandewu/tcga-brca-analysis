@@ -6,7 +6,7 @@ library(readxl)
 
 # gene <- read_excel("/home/jiande/nas/Tarun_projects/prostate_cancer_new/All_info/Plot/KLK2.xlsx")
 setwd("~/prjs/BreastTumor/methylation/limma/result")
-hdat <- read.csv(file = "all_intersection_position.txt", sep = "\t")
+hdat <- read.csv(file = "all_intersection_position_geneloc.txt", sep = "\t")
 
 genelist <- unique(hdat$Gene)
 
@@ -19,6 +19,8 @@ legendlist <- list()
 
 plotlist <- 1:length(genelist)
 # plotlist <- c(2)
+
+# genespec <- 2
 for (genespec in plotlist) {
 
 # gene <- hdat[hdat$Gene=="COL5A2",c(2,4)]
@@ -26,8 +28,12 @@ gene_syb <- as.character(genelist[genespec])
 gene <- hdat[hdat$Gene==gene_syb,c(2,4)]
 
 chromo <- as.character(hdat[hdat$Gene==genelist[genespec],3])[1]
-start <- min(gene$Start)
-end <- max(gene$Start)
+loli_start <- min(gene$Position)
+loli_end <- max(gene$Position)
+gene_start <- hdat[hdat$Gene==genelist[genespec],5][1]
+gene_end <- hdat[hdat$Gene==genelist[genespec],6][1]
+start <- min(loli_start,gene_start)
+end <- max(loli_end,gene_end)
 sample.groups <- as.character(gene$Mutation)
 legendlist <- c(legendlist,sample.groups)
 
@@ -37,14 +43,16 @@ sample.groups <- gsub("Somatic", "blue", sample.groups)
 sample.groups <- gsub("Methylation", "green", sample.groups)
 
 # KLK2 <- GRanges("chr17", IRanges(gene$Position, width=1))
-gene_name[[gene_syb]] <- GRanges(chromo, IRanges(gene$Start, width=1))
+gene_name[[gene_syb]] <- GRanges(chromo, IRanges(gene$Position, width=1))
 # KLK2$color <- sample.groups
 gene_name[[gene_syb]]$color <- sample.groups
 # KLK2$score <- sample.int(20, length(KLK2), replace=TRUE)
 # gene_name[[gene_syb]]$score <- sample.int(20, length(gene_name[[gene_syb]]), replace=TRUE)
 gene_name[[gene_syb]]$score <- rep(5.2,length(gene_name[[gene_syb]]))
 # features <- GRanges("chr17:51364600- 51393200")
-features[[gene_syb]] <- GRanges(paste(chromo,":",start,"- ",end,sep=""))
+# features[[gene_syb]] <- GRanges(paste(chromo,":",start,"- ",end,sep=""))
+features[[gene_syb]] <- GRanges(chromo,IRanges(c(start,gene_start,gene_end),width=c(gene_start-start, gene_end-gene_start, end-gene_end)))
+features[[gene_syb]]$fill <- c("#FFFFFF", "#51C6E6", "#FFFFFF")
 
 # legend <- c(rep("red", 1), rep("blue",1), rep("green", 1))
 # legend[[gene_syb]] <- gsub("Methylation", "green", gsub("Somatic", "blue", gsub("Germline", "red", as.character(unique(gene$Mutation)))))

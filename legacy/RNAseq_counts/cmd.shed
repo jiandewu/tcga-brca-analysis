@@ -1,0 +1,88 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor
+╰─$ /home/jiande/bin/gdc-client download -m gdc_manifest_20181109_171713_Tumor.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/raw_data/RNAseq_counts/Normal  
+╰─$ /home/jiande/bin/gdc-client download -m ../gdc_manifest_20181109_180824_Normal.txt
+
+# delete duplicate fold in Normal from Tumor
+ls -lR /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/ | grep -E $(ls -lR /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/ | grep ^d | rev | cut -d" " -f1 | rev | sort | uniq -d | head -c -1 | tr '\n' '|') | grep -v ^d | sed 's/://' | grep "/Tumor/" | grep -v "/logs" | xargs rm -rf
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/raw_data  
+╰─$ tar -xzf gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0.tar.gz 
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/raw_data  
+╰─$ rm gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0.tar.gz 
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/analyse_data  
+╰─$ sed -n '5p;13p;21,22p;24p;29p;575p;1160p;1359p;1478p;1480p;1481q' /home/jiande/prjs/BreastTumor/raw_data/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.clin.merged.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=7 second=8 > BRCA.clin.merged_cut.txt
+
+awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=1 second=5 BRCA.clin.merged_cut.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=2 second=6 | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=3 second=7 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 > TNBC_clin_list.txt
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/removeColumnByName.awk <(head -2 TNBC_list.txt | tail -1 | tr '\t' '\n' | tail -n+2) BRCA.clin.merged_cut.txt > nonTNBC_clin_list.txt
+
+join -1 2 -2 1 <(grep -wFf <(cut -f2- TNBC_list.txt | head -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' /home/jiande/prjs/BreastTumor/raw_data/files.2018-11-09.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- TNBC_list.txt | sed -n '1p;4p' | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Transpose.awk OFS='\t' | sort -k1,1) | tr ' ' '\t' > TNBC_patient_uuid_file_name_barcode.txt
+
+join -1 2 -2 2 <(grep -wFf <(cut -f2- nonTNBC_list.txt | head -4 | tail -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' /home/jiande/prjs/BreastTumor/raw_data/files.2018-11-09.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- nonTNBC_list.txt | sed -n '3,4p' | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Transpose.awk OFS='\t' | sort -k2,2) | tr ' ' '\t' > nonTNBC_patient_uuid_file_name_barcode.txt
+
+mkdir tmp
+
+cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > TNBC_all.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 nonTNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > nonTNBC_all.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > TNBC.ctrl.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 nonTNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > nonTNBC.ctrl.counts.txt
+
+rm -f tmp/*
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/extractColumnByName.awk <(head -1 TNBC.ctrl_all.counts.txt | tr '\t' '\n') TNBC_all.counts.txt > TNBC.Tumor.counts.txt

@@ -17,11 +17,11 @@
 #cut -f2 prob_gengsym_orig.txt | tail -n+2 | tr ';' '\n' | awk -F '.' '(NR>1){print $1}' | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Sites' > prob_gengsym_sitecount.txt
 
 awk -F $'\t' '{split($2,genes,";");for(i in genes){split(genes[i],g,".");split(g[1],gg,"-");print $1 "\t" gg[1]}}' OFS='\t' prob_gengsym_orig.txt | body sort -k2,2 > prob_gengsym.txt
-grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) prob_gengsym.txt | sort -k2,2 | sed -e '1iComposite Element REF\tGene' > prob_gengsym_Grch38.txt
-cut -f2 prob_gengsym_Grch38.txt | tail -n+2 | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Sites' > prob_gengsym_sitecount_Grch38.txt
+grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) prob_gengsym.txt | sort -k2,2 | sed -e '1iComposite Element REF\tGene' > prob_gengsym_Grch37.txt
+cut -f2 prob_gengsym_Grch37.txt | tail -n+2 | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Sites' > prob_gengsym_sitecount_Grch37.txt
 
 ╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
-╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../prob_gengsym_Grch38.txt) <(sed -e '1s/^/Composite Element REF\t/' normal_TNBC_p.txt | body sort -k 1,1) | awk -F $'\t' '($2!="."){print}' > normal_TNBC_p_gene.txt
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../prob_gengsym_Grch37.txt) <(sed -e '1s/^/Composite Element REF\t/' normal_TNBC_p.txt | body sort -k 1,1) | awk -F $'\t' '($2!="."){print}' > normal_TNBC_p_gene.txt
 
 cut -f2 normal_TNBC_p_gene.txt | tail -n+2 | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Count(lgFC=0.25,pval<.001)' > Methylation_genes.txt
 
@@ -37,7 +37,7 @@ cut -f1,6 /home/jiande/prjs/BreastTumor/limma/results/TNBC_normal_p_fc1_gene.txt
 
 ╰─$ awk -F '.' '{print $1,1}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas_trip.txt | awk -F $'\t' '{split($1,a,".");split(a[1],b,"-");$1=b[1];print}' OFS='\t' | sort -u -k1,1 | sed -e '1iGene\tGermline Count' > Gwas_genes.txt
 
-╰─$ /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/full-outer-join.awk HEADER=1 ../prob_gengsym_sitecount_Grch38.txt Methylation_genes.txt Somatic_genes.txt Gwas_genes.txt RNAseq_genes.txt | awk -F $'\t' '($3!="NULL"||$4!="NULL"||$5!="NULL"||$6!="NULL"){print}' OFS='\t' | body grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh38_gene-symbols.txt) > all.txt
+╰─$ /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/full-outer-join.awk HEADER=1 ../prob_gengsym_sitecount_Grch37.txt Methylation_genes.txt Somatic_genes.txt Gwas_genes.txt RNAseq_genes.txt | awk -F $'\t' '($3!="NULL"||$4!="NULL"||$5!="NULL"||$6!="NULL"){print}' OFS='\t' | body grep -wFf <(cut -f5 /home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) > all.txt
 
 cut -f1,3 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > methy_list.txt
 cut -f1,4 all.txt | tail -n+2 | awk -F $'\t' '$2!="NULL"{print $1}' > somatic_list.txt
@@ -61,6 +61,7 @@ awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractC
 awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/extractColumnByName.awk <(comm -12 TNBC_race_Somatic.txt <(comm -12 TNBC_race_Methy.txt TNBC_race_RNAseq.txt)) TNBC_race.txt | tail -1 | tr '\t' '\n' | sort | uniq -c > TNBC_race_group.txt
 
 
+
 #!/bin/bash
 grep -wFf <(cut -f1 all_intersection.txt | tail -n+2 | sed -e '1iHugo_Symbol') /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/Variant_Type.txt | awk -F $'\t' '(NR==1){split($0,a,"\t");next};{s2=""; for(i=2;i<=NF;i++) if ($i!="") s2=s2 (s2?";":"") a[i]; print $1,s2}' OFS='\t' | 
 while IFS='' read -r line || [[ -n "$line" ]]; do
@@ -74,7 +75,35 @@ uniq | sed -e '1igene\tChromosome\tStart\tEnd' > all_intersection_mut_position.t
 
 join -1 1 -2 1 -t $'\t' <(grep -wFf <(cut -f1 all_intersection.txt) normal_TNBC_p_gene.txt | cut -f1,2 | body sort -k1,1) /home/jiande/prjs/BreastTumor/methylation/TCGA-A7-A0D9-01A-31D-A10P.txt | cut -f1,2,4-6 | body sort -k2,2 > all_intersection_methy_position.txt
 
-cat <(cut -f2-4 all_intersection_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 all_intersection_mut_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/bin/Swap2Columns.awk i=1 j=2 > all_intersection_position.txt
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/HicksRaw  
+╰─$ libreoffice --headless --convert-to csv "HICKS_TARUN_PCA-P1_GWAS-GENES_UPD2018-SNPS-Copy of GWAS-TABLE_SA_PROSTATE_SNP_GENES.xlsx" ./
 
 ╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
-╰─$ Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/BreastCancerPrj/methylation/limma/lolliplot_batch.r 
+╰─$ grep -wFf <(cut -f1 all_intersection.txt) <(tail -n+3 /home/jiande/prjs/BreastTumor/HicksRaw/HICKS_TARUN_PCA-P1_GWAS-GENES_UPD2018-SNPS-Copy\ of\ GWAS-TABLE_SA_PROSTATE_SNP_GENES.csv |  cut -d ',' -f1,2) | 
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    gene=${line%%,rs*}
+    SNP=${line#$gene,}
+    temp=$(wget -q -O- https://www.ncbi.nlm.nih.gov/snp/$SNP | grep -A 1 '<td>GRCh37.p13' | tr '\n' ' ')
+    chr=${temp%%</td>*}
+    chr=chr${chr#*chr }
+    pos=${temp##*g\.}
+    pos=${pos%%[A-Z]*}
+    echo $gene"\t"$SNP"\t"$chr"\t"$pos
+done > all_intersection_germline_position.txt
+## explain:
+#line: BAIAP2L1,rs9649213
+#gene: BAIAP2L1
+#SNP: rs9649213
+#temp:    <td>GRCh37.p13 chr 7</td>                           <td>NC_000007.13:g.98021211A>G</td>
+#chr:    <td>GRCh37.p13 chr 7 
+#chr:    chr7 
+#pos: 98021211A>G</td>
+#pos: 98021211
+
+
+cat <(cut -f2-4 all_intersection_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 all_intersection_mut_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') <(awk '{print "Germline",$1,$3,$4}' OFS='\t' all_intersection_germline_position.txt) | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Columns.awk i=1 j=2 > all_intersection_position.txt
+
+join -1 1 -2 3 -t $'\t' <(tail -n+2 all_intersection_position.txt) <(cut -f3-5 /home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt | tail -n+2 | sort -k3,3) | sed -e '1iGene\tMutation\tChromosome\tPosition\tStart\tEnd' > all_intersection_position_geneloc.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
+╰─$ Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/BreastTumor/methylation/limma/lolliplot_batch.r
