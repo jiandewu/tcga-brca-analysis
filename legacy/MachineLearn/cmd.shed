@@ -1,0 +1,111 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/MachineLearn  
+
+sed -n '5p;13p;21,22p;24p;29p;575p;1160p;1359p;1478p;1480p;1481q' /home/jiande/prjs/BreastTumor/raw_data/gdac.broadinstitute.org_BRCA.Merge_Clinical.Level_1.2016012800.0.0/BRCA.clin.merged.txt | awk -f $gitbin/Swap2Rows.awk first=7 second=8 > 00.BRCA.clin.merged.cut.txt
+
+awk -f $gitbin/Swap2Rows.awk first=1 second=5 00.BRCA.clin.merged.cut.txt | awk -f $gitbin/Swap2Rows.awk first=2 second=6 | awk -f $gitbin/Swap2Rows.awk first=3 second=7 | awk -F $'\t' -f $gitbin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f $gitbin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f $gitbin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 > 01.TNBC.clin.list.txt
+
+awk -f $gitbin/Swap2Rows.awk first=1 second=5 00.BRCA.clin.merged.cut.txt | awk -F $'\t' -f $gitbin/ExtractColumnsbyKey.awk key="positive" | tail -n+2 > 01.ERPBC.clin.list.txt
+
+join -1 2 -2 1 <(grep -wFf <(cut -f2- 01.TNBC.clin.list.txt | head -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' /home/jiande/prjs/BreastTumor/raw_data/files.2018-11-09.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- 01.TNBC.clin.list.txt | sed -n '1p;4p' | awk -F $'\t' -f $gitbin/Transpose.awk OFS='\t' | sort -k1,1) | tr ' ' '\t' > 02.TNBC.patient.uuid.file.name.barcode.txt
+
+join -1 2 -2 2 <(grep -wFf <(cut -f2- 01.ERPBC.clin.list.txt | head -3 | tail -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' /home/jiande/prjs/BreastTumor/raw_data/files.2018-11-09.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- 01.ERPBC.clin.list.txt | sed -n '2,3p' | awk -F $'\t' -f $gitbin/Transpose.awk OFS='\t' | sort -k2,2) | tr ' ' '\t' > 02.ERPBC.patient.uuid.file.name.barcode.txt
+
+mkdir tmp
+
+cut -f2,3 02.TNBC.patient.uuid.file.name.barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > 03.TNBC.tumor.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 02.TNBC.patient.uuid.file.name.barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > 03.TNBC.normal.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 02.ERPBC.patient.uuid.file.name.barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > 03.ERPBC.tumor.counts.txt
+
+rm -f tmp/*
+
+cut -f2,3 02.ERPBC.patient.uuid.file.name.barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > tmp/${FILE}.txt \;
+  sed -i -e "60484,60488d" -e "1iGene stable ID\t$ID" tmp/${FILE}.txt
+done
+
+find tmp -size 0 -exec rm {} \;
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.htseq.counts.txt > 03.ERPBC.normal.counts.txt
+
+rm -f tmp/*
+
+rmdir tmp
+
+$gitbin/DEanlysis.R --treat 03.TNBC.tumor.counts.txt --ctrl 03.TNBC.normal.counts.txt --outfile 04.Pvalue.TNBC.tumor.normal.txt
+
+$gitbin/volcano.R --data <(tail -n+2 04.Pvalue.TNBC.tumor.normal.txt | cut -f1,2,6) --title "TNBC vs. Ctrl." --out 04.volc.TNBC.tumor.normal.png
+# or: tail -n+2 04.Pvalue.TNBC.tumor.normal.txt | cut -f1,2,6 | $gitbin/volcano.R --title "TNBC vs. Ctrl." --out 04.volc.TNBC.tumor.normal.png
+
+$gitbin/DEanlysis.R --treat 03.ERPBC.tumor.counts.txt --ctrl 03.ERPBC.normal.counts.txt --outfile 04.Pvalue.ERPBC.tumor.normal.txt
+
+$gitbin/volcano.R --data <(tail -n+2 04.Pvalue.ERPBC.tumor.normal.txt | cut -f1,2,6) --title "ERPBC vs. Ctrl." --out 04.volc.ERPBC.tumor.normal.png
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 04.Pvalue.TNBC.tumor.normal.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f1,5,7- > 05.Pvalue.TNBC.tumor.normal.txt
+
+paste <(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tnormal";print str}' OFS='\t' 03.TNBC.normal.counts.txt) \
+<(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tnormal";print str}' OFS='\t' 03.ERPBC.normal.counts.txt | cut -f2-) \
+<(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tTNBC";print str}' OFS='\t' 03.TNBC.tumor.counts.txt | cut -f2-) \
+<(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tERPBC";print str}' OFS='\t' 03.ERPBC.tumor.counts.txt | cut -f2-) \
+> 10.weka.TNBC.ERPBC.normal.csv
+
+join  -1 1 -2 1 -t $'\t' \
+<(cat <(tail -n+1 04.Pvalue.TNBC.tumor.normal.txt | awk -F $'\t' '(($2>=2||$2<=-2)&&$6<0.001){print}' | cut -f1,2 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | cut -f1) \
+<(tail -n+1 04.Pvalue.ERPBC.tumor.normal.txt | awk -F $'\t' '(($2>=2||$2<=-2)&&$6<0.001){print}' | cut -f1,2 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | cut -f1) \
+<(echo "lable\nGene stable ID") |\
+sort | uniq) \
+<(sort -k1,1 10.weka.TNBC.ERPBC.normal.csv) \
+> 11.weka.TNBC.ERPBC.normal.fc2.csv
+
+cat <(join -1 1 -2 1 -t $'\t' <(sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 11.weka.TNBC.ERPBC.normal.csv) | cut -f5,7-) \
+<(tail -1 11.weka.TNBC.ERPBC.normal.fc2.csv) |\
+awk -F $'\t' -f $gitbin/Transpose.awk OFS=',' \
+> 12.weka.TNBC.ERPBC.normal.csv

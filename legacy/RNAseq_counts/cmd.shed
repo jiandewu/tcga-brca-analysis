@@ -17,6 +17,8 @@ ls -lR /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/ | grep -E $(ls -lR 
 
 awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=1 second=5 BRCA.clin.merged_cut.txt | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=2 second=6 | awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=3 second=7 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="negative" | tail -n+2 > TNBC_clin_list.txt
 
+awk -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Rows.awk first=1 second=5 BRCA.clin.merged_cut.txt | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/ExtractColumnsbyKey.awk key="positive" | tail -n+2 > ERPBC_clin_list.txt
+
 awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/removeColumnByName.awk <(head -2 TNBC_list.txt | tail -1 | tr '\t' '\n' | tail -n+2) BRCA.clin.merged_cut.txt > nonTNBC_clin_list.txt
 
 join -1 2 -2 1 <(grep -wFf <(cut -f2- TNBC_list.txt | head -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' /home/jiande/prjs/BreastTumor/raw_data/files.2018-11-09.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- TNBC_list.txt | sed -n '1p;4p' | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Transpose.awk OFS='\t' | sort -k1,1) | tr ' ' '\t' > TNBC_patient_uuid_file_name_barcode.txt
@@ -86,3 +88,31 @@ awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $2)}EN
 rm -f tmp/*
 
 awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/extractColumnByName.awk <(head -1 TNBC.ctrl_all.counts.txt | tr '\t' '\n') TNBC_all.counts.txt > TNBC.Tumor.counts.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/analyse_data/batch
+╰─$ $gitbin/DEanlysis.R --treat TNBC.Tumor.counts.txt --ctrl TNBC.ctrl.counts.txt --outfile tnbc_tumor.ctrl.Pvalue.txt
+╰─$ $gitbin/volcano.R --data <(tail -n+2 tnbc_tumor.ctrl.Pvalue.txt | cut -f1,2,6) --title "TNBC vs. Ctrl." --out tnbc.ctrl.volc.png
+╰─$ tail -n+2 tnbc_tumor.ctrl.Pvalue.txt | cut -f1,2,6 | $gitbin/volcano.R --title "TNBC vs. Ctrl." --out tnbc.ctrl.volc.png
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' tnbc_tumor.ctrl.Pvalue.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f1,5,7- > RNAseq_p_gene.txt
+
+awk -F $'\t' '(($3>=2||$3<=-2)&&$7<0.001){print}' RNAseq_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tRNAseq logFC' > RNAseq_genes_FC.txt
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/analyse_data/batch.tnbc.nontnbc
+╰─$ $gitbin/DEanlysis.R --treat ../TNBC.Tumor.counts.txt --ctrl ../nonTNBC_all.counts.txt --outfile tnbc_tumor.nontnbc.Pvalue.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' tnbc_tumor.nontnbc.Pvalue.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f1,5,7- > tnbc_tumor.nontnbc.Pvalue_gene.txt
+
+awk -F $'\t' '(($3>=2||$3<=-2)&&$7<0.001){print}' tnbc_tumor.nontnbc.Pvalue_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tRNAseq logFC' > tnbc_tumor.nontnbc.Pvalue_gene_FC2.txt
+
+awk -F $'\t' '(($3>=1.5||$3<=-1.5)&&$7<0.001){print}' tnbc_tumor.nontnbc.Pvalue_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | wc -l
+

@@ -107,3 +107,43 @@ join -1 1 -2 3 -t $'\t' <(tail -n+2 all_intersection_position.txt) <(cut -f3-5 /
 
 ╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
 ╰─$ Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/BreastTumor/methylation/limma/lolliplot_batch.r
+
+
+
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/batch
+╰─$ $gitbin/DEanlysis.R --treat ../../TNBC/combin_prob.txt --ctrl ../../Normal/combin_prob.txt --outfile tnbc_tumor.ctrl.Pvalue.txt
+╰─$ tail -n+2 tnbc_tumor.ctrl.Pvalue.txt | cut -f1,2,6 | $gitbin/volcano.R --logFC 0.3 --title "TNBC vs. Ctrl." --out tnbc.ctrl.volc0.3.png
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../prob_gengsym_Grch37.txt) <(sed -e '1s/^/Composite Element REF\t/' tnbc_tumor.ctrl.Pvalue.txt | body sort -k 1,1) | awk -F $'\t' '($2!="."){print}' > normal_TNBC_p_gene.txt
+
+awk -F $'\t' '(($3>=0.3||$3<=-0.3)&&$7<0.001){print}' normal_TNBC_p_gene.txt | cut -f2 | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sed -e '1iGene\tMethylation Count(lgFC=0.3,qval<.001)' > Methylation_genes.txt
+
+awk -F $'\t' '(($3>=0.3||$3<=-0.3)&&$7<0.001){print}' normal_TNBC_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tMethy logFC' > Methylation_genes_FC.txt
+
+join -1 1 -2 1 -t $'\t' Methylation_genes_FC.txt /home/jiande/prjs/BreastTumor/analyse_data/batch/RNAseq_genes_FC.txt > Methy_RNAseq_FC.txt
+
+join -1 1 -2 1 -t $'\t' <(awk -F $'\t' '($7<0.001){print}' normal_TNBC_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tMethy logFC') <(awk -F $'\t' '($7<0.001){print}' /home/jiande/prjs/BreastTumor/analyse_data/batch/RNAseq_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tRNAseq logFC') > Methy_RNAseq_all_FC.txt
+
+$gitbin/full-outer-join.awk HEADER=1 <(awk -F $'\t' '($7<0.001){print}' normal_TNBC_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tMethy logFC') <(awk -F $'\t' '($7<0.001){print}' /home/jiande/prjs/BreastTumor/analyse_data/batch/RNAseq_p_gene.txt | cut -f2,3 | awk -F $'\t' '
+function abs(v) {return v < 0 ? -v : v}
+{if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
+' OFS='\t' | sort -k1,1 | sed -e '1iGene\tRNAseq logFC') > Methy_RNAseq_all_FC.txt
+
+tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($2!="NULL"&&$2>0.3){print $1,$2}' OFS='\t' | cut -f1 > Hypermethyl.txt
+tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($2!="NULL"&&$2<-0.3){print $1,$2}' OFS='\t' | cut -f1 > Hypomethyl.txt
+tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($3!="NULL"&&$3>2){print $1}' > Upregulated.txt
+tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($3!="NULL"&&$3<-2){print $1}' > Downregulated.txt
