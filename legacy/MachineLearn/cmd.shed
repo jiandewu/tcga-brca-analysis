@@ -81,9 +81,156 @@ $gitbin/volcano.R --data <(tail -n+2 04.Pvalue.TNBC.tumor.normal.txt | cut -f1,2
 
 $gitbin/DEanlysis.R --treat 03.ERPBC.tumor.counts.txt --ctrl 03.ERPBC.normal.counts.txt --outfile 04.Pvalue.ERPBC.tumor.normal.txt
 
-$gitbin/volcano.R --data <(tail -n+2 04.Pvalue.ERPBC.tumor.normal.txt | cut -f1,2,6) --title "ERPBC vs. Ctrl." --out 04.volc.ERPBC.tumor.normal.png
+$gitbin/volcano.R --data <(tail -n+2 04.Pvalue.ERPBC.tumor.normal.txt | cut -f1,2,6) --pvalue 0.05 --logFC 1 --title "ERPBC vs. Ctrl." --out 04.volc.ERPBC.tumor.normal.png
 
-join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 04.Pvalue.TNBC.tumor.normal.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f1,5,7- > 05.Pvalue.TNBC.tumor.normal.txt
+$gitbin/DEanlysis.R --treat 03.TNBC.tumor.counts.txt --ctrl 03.ERPBC.tumor.counts.txt --outfile 04.Pvalue.TNBC.ERPBC.txt
+
+$gitbin/volcano.R --data <(tail -n+2 04.Pvalue.TNBC.ERPBC.txt | cut -f1,2,6) --title "TNBC vs. ERPBC" --out 04.volc.TNBC.ERPBC.png
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 04.Pvalue.TNBC.tumor.normal.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f5,7- | body sort -k1,1 -u > 05.Pvalue.TNBC.tumor.normal.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 04.Pvalue.ERPBC.tumor.normal.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f5,7- | body sort -k1,1 -u > 05.Pvalue.ERPBC.tumor.normal.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' 04.Pvalue.TNBC.ERPBC.txt | sed -e '1s/^/Gene stable ID\t/' | body sort -k 1,1) | cut -f1,5,7- > 05.Pvalue.TNBC.ERPBC.gene.txt
+
+cut -f2,3,6,7 05.Pvalue.TNBC.ERPBC.gene.txt | body awk -F $'\t' '($4<0.05){print}' > 06.TNBC.ERPBC.Pvalue.05.txt
+cut -f1,2,5,6 05.Pvalue.ERPBC.tumor.normal.gene.txt | body awk -F $'\t' '($4<0.05){print}' > 06.ERPBC.tumor.normal.Pvalue.05.txt
+
+awk -F $'\t' '($2<-2||$2>2){print}' 06.TNBC.ERPBC.Pvalue.05.txt > 06.TNBC.ERPBC.Pvalue.05.logFC2.txt
+
+awk -F $'\t' '($2<-1||$2>1){print}' 06.TNBC.ERPBC.Pvalue.05.txt > 06.TNBC.ERPBC.Pvalue.05.logFC1.txt
+awk -F $'\t' '($2<-1||$2>1){print}' 06.ERPBC.tumor.normal.Pvalue.05.txt > 06.ERPBC.tumor.normal.Pvalue.05.logFC1.txt
+
+awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/nontrip/mut_exp.txt > 06.ERPBC.mut0.txt
+
+cut -f1 06.ERPBC.mut0.txt | tail -n+2 > 06.ERPBC.mut0.onlygene.txt
+cut -f1 06.ERPBC.tumor.normal.Pvalue.05.txt | tail -n+2 > 06.ERPBC.tumor.normal.Pvalue.05.onlygene.txt
+
+#awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt > 06.TNBC.mut0.txt
+
+#cat <(comm -23 <(cut -f1 06.TNBC.mut0.txt | sort) <(cut -f1 06.ERPBC.mut0.txt | sort)) <(comm -13 <(cut -f1 06.TNBC.mut0.txt | sort) <(cut -f1 06.ERPBC.mut0.txt | sort)) > 06.TNBC.ERPBC.mut0.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas_uniq.txt | sort)  <(sort -k1,1 05.Pvalue.ERPBC.tumor.normal.gene.txt) | cut -f1 > 06.GWAS.ERPBC.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas_uniq.txt | sort)  <(sort -k1,1 /home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.gene.txt) | cut -f1 | sort -u > 06.GWAS.TNBC.txt
+
+comm -12 <(comm -12 <(sort 06.GWAS.ERPBC.txt) <(sort 06.ERPBC.mut0.onlygene.txt) | sort) <(sort 06.ERPBC.tumor.normal.Pvalue.05.onlygene.txt) > 07.ERPBC.424.DE.Som.Gem.comm.gene.txt
+
+comm -12 <(sort 06.ERPBC.mut0.onlygene.txt) <(sort 06.ERPBC.tumor.normal.Pvalue.05.onlygene.txt) > 07.ERPBC.11399.DE.Som.comm.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.txt) <(sort -k1,1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/nontrip/mut_exp04.txt) > 07.ERPBC.11399.DE.Som.comm.gene.mut05.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt) <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.mut30.txt) | cut -f1-5 | sort -k5,5rn | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val\tfrequency of mutations' > 07.ERPBC.pvalue.05.mut30.txt
+
+comm -13 <(sort 06.ERPBC.mut0.onlygene.txt) <(sort 06.ERPBC.tumor.normal.Pvalue.05.onlygene.txt) > 07.ERPBC.8064.DE.nonSom.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.txt) <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt) | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val' > S2A.txt
+
+join -1 1 -2 1 -t $'\t' <(join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.txt) <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt)) <(sort -k1,1 /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/nontrip/mut_exp.txt) | cut -f1-5 | sort -k5,5rn | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val\tfrequency of mutations' > S2A.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.8064.DE.nonSom.gene.txt) <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt) | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val' > S2B.txt
+
+awk -F $'\t' -f $gitbin/Swap2Columns.awk i=2 j=6 /home/jiande/prjs/BreastTumor/limma/results/S1.Somatic.Pvalue.05.freq.txt > S1A.txt
+cut -f1 S1A.txt | tail -n+2 > 07.TNBC.5502.DE.Som.comm.gene.txt
+
+comm -12 <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) <(sort 07.ERPBC.11399.DE.Som.comm.gene.txt) > 08.4013.comm.mut.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 S1A.txt | sort -k1,1) <(tail -n+2 S2A.txt | sort -k1,1 ) | sed -e '1iGenes\tTNBC logFC\tTNBC P.Value\tTNBC adj.P.Val\tSomatic TNBC\tERPBC logFC\tERPBC P.Value\tERPBC adj.P.Val\tSomatic ERPBC' | awk -F $'\t' -f $gitbin/Swap2Columns.awk i=5 j=10 | awk -F $'\t' -f $gitbin/Swap2Columns.awk i=8 j=9 | sed -e '1iCommon 4013 somatic mutated significant genes with frequencies and statistics\n' > S3A.txt
+
+join -1 1 -2 1 -t $'\t' <(comm -23 <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) <(sort 07.ERPBC.11399.DE.Som.comm.gene.txt)) <(tail -n+2 S1A.txt | sort -k1,1) | sort -k5,5rn | sed -e '1iGenes\tTNBC logFC\tTNBC P.Value\tTNBC adj.P.Val\tSomatic TNBC' > S3B.txt
+
+join -1 1 -2 1 -t $'\t' <(comm -13 <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) <(sort 07.ERPBC.11399.DE.Som.comm.gene.txt)) <(tail -n+2 S2A.txt | sort -k1,1) | sort -k5,5rn | sed -e '1iGenes\tERPBC logFC\tERPBC P.Value\tERPBC adj.P.Val\tSomatic ERPBC' > S3C.txt
+
+mv /home/jiande/prjs/BreastTumor/limma/results/S2.Pvalue.05.noMutation.txt S1B.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt) <(sed -e '1s/^/Gene stable ID\t/' 04.Pvalue.ERPBC.tumor.normal.norm.txt | awk -F '\t' 'BEGIN{OFS="\t";} {sub(/\..+$/, "", $1)}1' |  body sort -k1,1 -u) | cut -f5,7- > 07.ERPBC.Express.tumor.normal.gene.txt
+
+cat <(head -1 07.ERPBC.Express.tumor.normal.gene.txt) <(join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.Express.tumor.normal.gene.txt) <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt)) > 07.ERPBC.424.erpree.gene.txt
+
+cp /home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.05.onlygene.txt 07.TNBC.22968.DE.gene.txt
+
+comm -23 <(sort 07.TNBC.22968.DE.gene.txt) <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) > 07.TNBC.17466.DE.nonSom.gene.txt
+
+sed -e '1s/frequency of mutations/Somatic Mutation Event/' /home/jiande/prjs/BreastTumor/limma/results/S1.Somatic.Pvalue.05.freq.txt > 07.TNBC.5502.DE.Som.comm.gene.exp.count.txt
+
+comm -12 <(comm -12 <(sort 06.GWAS.TNBC.txt) <(sort 06.Som.TNBC.txt) | sort) <(sort 06.DEA.TNBC.txt) > 07.TNBC.237.DE.Som.Gem.comm.gene.txt
+
+cp /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip_gwas-33.txt 06.GWAS.TNBC.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 /home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.gene.txt) <(sort 06.GWAS.TNBC.txt) > 07.TNBC.GWAS.gene.DEA.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 05.Pvalue.ERPBC.tumor.normal.gene.txt) <(sort 06.GWAS.ERPBC.txt) | cut -f1,2,5,6 > 07.ERPBC.GWAS.gene.DEA.txt
+
+cp /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip_mu0.txt 06.Som.TNBC.txt
+
+cp /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/ep_mu0.txt 06.Som.ERPBC.txt
+
+cp /home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.05.onlygene.txt 06.DEA.TNBC.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.TNBC.GWAS.gene.DEA.txt) <(awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | sort -k1,1) -a1 | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val\tMutation Event'  > 07.TNBC.GWAS.gene.DEA.Som.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.GWAS.gene.DEA.txt) <(awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/nontrip/mut_exp.txt | sort -k1,1) -a1 | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val\tMutation Event' > 07.ERPBC.GWAS.gene.DEA.Som.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.TNBC.GWAS.gene.DEA.Som.txt) <(sort 07.TNBC.237.DE.Som.Gem.comm.gene.txt) | sort -k5,5nr | sed -e '1iGenes\tlogFC\tP.Value\tadj.P.Val\tMutation Events' > Paper1.S2.txt
+
+join -1 1 -2 1 -t $'\t' <(head -31 Paper1.S2.txt | cut -f1 | body sort) <(body sort -k1,1 < /home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.237.DE.Som.Gem.comm.gene.top30.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 Paper1.S2.txt | body sort) <(body sort -k1,1 < /home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.237.DE.Som.Gem.comm.gene.exp.txt
+
+comm -12 <(sort 07.TNBC.22968.DE.gene.txt) <(sort 06.GWAS.TNBC.txt) > 07.TNBC.504.DE.Gem.comm.gene.txt
+
+comm -13 <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) <(sort 07.TNBC.504.DE.Gem.comm.gene.txt) > 07.TNBC.267.DE.Gem.nonSom.comm.gene.txt
+
+comm -23 <(sort 07.TNBC.5502.DE.Som.comm.gene.txt) <(sort 07.TNBC.504.DE.Gem.comm.gene.txt) > 07.TNBC.5265.DE.Som.nonGem.comm.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.5265.DE.Som.nonGem.comm.gene.txt | sed -e '1iGenes') <(body sort -k1,1 <07.TNBC.5502.DE.Som.comm.gene.exp.count.txt) > 07.TNBC.5265.DE.Som.comm.gene.exp.count.txt
+
+awk -F $'\t' '($2>4&&($3>0.5||$3<-0.5)&&$5<0.05){print $1}' OFS='\t' 07.TNBC.5265.DE.Som.comm.gene.exp.count.txt > 07.TNBC.43.DE.Som5.nonGem.comm.gene.txt
+
+awk -F $'\t' '($2>2&&($3>1||$3<-1)&&$5<0.05){print $1}' OFS='\t' 07.TNBC.5265.DE.Som.comm.gene.exp.count.txt > 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.91.DE.Som5.nonGem.comm.gene.txt | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.91.DE.Som5.nonGem.comm.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.267.DE.Gem.nonSom.comm.gene.txt | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.267.DE.Gem.nonSom.comm.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.267.DE.Gem.nonSom.comm.gene.txt | sed -e '1iGene name') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.gene.txt) > 07.TNBC.267.DE.Gem.nonSom.comm.gene.Pvalue.txt
+
+awk -F $'\t' '(($2>0.5||$2<-0.5)&&$4<0.05){print $1}' OFS='\t' 07.TNBC.267.DE.Gem.nonSom.comm.gene.Pvalue.txt > 07.TNBC.125.DE.Som5.nonGem.comm.gene.txt
+
+awk -F $'\t' '(($2>1||$2<-1)&&$4<0.05){print $1}' OFS='\t' 07.TNBC.267.DE.Gem.nonSom.comm.gene.Pvalue.txt > 07.TNBC.55.DE.Gem.comm.gene.txt
+
+cat 07.TNBC.91.DE.Som5.nonGem.comm.gene.exp.txt <(tail -n+2 07.TNBC.267.DE.Gem.nonSom.comm.gene.exp.txt) > 07.TNBC.91.267.DE.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(cat 07.TNBC.43.DE.Som5.nonGem.comm.gene.txt 07.TNBC.125.DE.Som5.nonGem.comm.gene.txt | sort | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.43.125.DE.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(cat 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt 07.TNBC.55.DE.Gem.comm.gene.txt | sort | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.99.55.DE.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(cat 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt 07.TNBC.267.DE.Gem.nonSom.comm.gene.txt | sort | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.99.267.DE.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(cat 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt 07.TNBC.267.DE.Gem.nonSom.comm.gene.txt 07.TNBC.237.DE.Som.Gem.comm.gene.txt | sort | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/TNBC110_Normal113.gene.txt) > 07.TNBC.99.267.237.DE.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt | sed -e '1iGenes') <(body sort -k1,1 <07.TNBC.5265.DE.Som.comm.gene.exp.count.txt) > 07.TNBC.99.DE.nonGem.Som3.comm.gene.Pvalue.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.3,1.4,1.5,1.2' <(body sort -k1,1 <07.TNBC.5502.DE.Som.comm.gene.exp.count.txt ) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGenes\tChromosome position') | body sort -k6,6nr | sed -e '1iTable S1A. List of significantly differentially expressed somatic mutated genes along with the frequency of somatic events, observed and adjusted p-values.\n' > 07.TNBC.5502.DE.Som.comm.gene.exp.count.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2,1.3,1.4' <(join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.17466.DE.nonSom.gene.txt | sed -e '1iGene name') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.gene.txt) | body sort -k1,1) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGene name\tChromosome position') | body sort -k1,1 | sed -e '1iTable S1B. List of significantly differentially expressed nonsomatic mutated genes along with adjusted p-values.\n' > 07.TNBC.17466.DE.nonSom.comm.gene.exp.count.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2,1.3,1.4,1.5' <(body sort -k1,1 <07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.txt ) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGenes\tChromosome position') | body sort -k6,6nr | sed -e '1iTable S2. List of significantly differentially expressed germline and somatic mutated genes along with the somatic events, observed and adjusted p-values.\n' > 07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2,1.3,1.4,1.5' <(body sort -k1,1 <07.TNBC.GWAS.gene.DEA.Som.txt ) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGenes\tChromosome position') | body sort -k6,6nr | sed -e '1iTable S3. List of significantly differentially expressed germline mutated genes between patients with TNBC and control samples.\n' > 07.TNBC.632.DE.Gem.Som.comm.gene.exp.count.cyto.txt
+
+cat <(head -3 07.TNBC.632.DE.Gem.Som.comm.gene.exp.count.cyto.txt | tail -1) <(join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.55.DE.Gem.comm.gene.txt) <(sort -k1,1 <07.TNBC.632.DE.Gem.Som.comm.gene.exp.count.cyto.txt)) | cut -f1-5 | sed -e '1iTable S4B. List of significantly differentially (adj.P<0.05, |log(FC)|>1) expressed only germline mutated genes between patients with TNBC and control samples.\n' > 07.TNBC.55.DE.Gem.nonSom.comm.gene.exp.count.cyto.txt
+
+cat <(head -3 07.TNBC.5502.DE.Som.comm.gene.exp.count.cyto.txt | tail -1) <(join -1 1 -2 1 -t $'\t' <(sort 07.TNBC.99.DE.Som3.nonGem.comm.gene.txt) <(sort -k1,1 <07.TNBC.5502.DE.Som.comm.gene.exp.count.cyto.txt)) | sed -e '1iTable S4A. List of significantly differentially (adj.P<0.05, |log(FC)|>1 and Mutation Event > 2) expressed only somatic mutated genes between patients with TNBC and control samples.\n' > 07.TNBC.99.DE.nonGem.Som3.comm.gene.exp.count.cyto.txt
+
+
+
+
+
+
+
+
+
 
 paste <(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tnormal";print str}' OFS='\t' 03.TNBC.normal.counts.txt) \
 <(awk -F $'\t' '1;END{str="lable";for(i=1;i<NF;i++)str=str"\tnormal";print str}' OFS='\t' 03.ERPBC.normal.counts.txt | cut -f2-) \
@@ -109,3 +256,26 @@ cat <(join -1 1 -2 1 -t $'\t' <(sort -k 1,1 </home/jiande/prjs/RefGene/GRCh37_ge
 <(tail -1 11.weka.TNBC.ERPBC.normal.fc2.csv) |\
 awk -F $'\t' -f $gitbin/Transpose.awk OFS=',' \
 > 12.weka.TNBC.ERPBC.normal.csv
+
+cat <(head -1 12.weka.TNBC.ERPBC.normal.csv) \
+<(tail -n+2 12.weka.TNBC.ERPBC.normal.csv | head -90 | shuf) \
+<(tail -n+92 12.weka.TNBC.ERPBC.normal.csv | head -116 | shuf) \
+<(tail -818 12.weka.TNBC.ERPBC.normal.csv | shuf) \
+> 13.weka.TNBC.ERPBC.normal.shuf.csv
+
+cat  <(head -1 13.weka.TNBC.ERPBC.normal.shuf.csv) \
+<(tail -n+2 13.weka.TNBC.ERPBC.normal.shuf.csv | head -81) \
+<(tail -n+92 13.weka.TNBC.ERPBC.normal.shuf.csv | head -104) \
+<(tail -818 13.weka.TNBC.ERPBC.normal.shuf.csv | head -736) \
+> 13.weka.TNBC.ERPBC.normal.shuf.training.csv
+
+cat  <(head -1 13.weka.TNBC.ERPBC.normal.shuf.csv) \
+<(tail -n+83 13.weka.TNBC.ERPBC.normal.shuf.csv | head -9) \
+<(tail -n+196 13.weka.TNBC.ERPBC.normal.shuf.csv | head -12) \
+<(tail -82 13.weka.TNBC.ERPBC.normal.shuf.csv) \
+> 13.weka.TNBC.ERPBC.normal.shuf.testing.csv
+
+java weka.classifiers.trees.RandomForest -P 100 -O -store-out-of-bag-predictions -output-out-of-bag-complexity-statistics -attribute-importance -I 1000 -num-slots 1 -K 0 -M 1.0 -V 0.001 -S 10 -t /home/jiande/prjs/BreastTumor/MachineLearn/13.weka.TNBC.ERPBC.normal.shuf.training.csv.arff -d /home/jiande/prjs/BreastTumor/MachineLearn/14.1000.trees.model
+
+java weka.classifiers.trees.RandomForest -p 2525 -l /home/jiande/prjs/BreastTumor/MachineLearn/14.1000.trees.model -T /home/jiande/prjs/BreastTumor/MachineLearn/13.weka.TNBC.ERPBC.normal.shuf.testing.csv.arff
+

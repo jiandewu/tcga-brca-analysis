@@ -97,6 +97,7 @@ awk -F $'\t' '$1=$1' gwas.txt | sort | uniq | awk 'BEGIN{print "Hugo_sym\tGWAS";
 
 awk -F $'\t' '(NR>1 && $2>0){print $1}' mut_exp.txt > trip_mu0.txt
 awk -F $'\t' '(NR>1 && $4>0){print $1}' mut_exp.txt > ep_mu0.txt
+awk -F $'\t' '(NR>1 && $2>3){print $1}' mut_exp.txt > trip_mu03.txt
 
 awk -F $'\t' '(NR>1 && $3>30){print $1}' mut_exp.txt > trip_exp30.txt
 awk -F $'\t' '(NR>1 && $5>30){print $1}' mut_exp.txt > ep_exp30.txt
@@ -111,6 +112,8 @@ awk -F $'\t' '(NR>1 && $4>0){print $1}' mut_exp_permtest.txt > ep_mu0_permtest.t
 awk -F $'\t' '(NR>1 && $3>33){print $1}' mut_exp_permtest.txt > trip_exp33_permtest.txt
 awk -F $'\t' '(NR>1 && $5>33){print $1}' mut_exp_permtest.txt > ep_exp33_permtest.txt
 
+join --header -1 1 -2 1 -t $'\t' /home/jiande/prjs/RefGene/cytoband.txt mut_exp.txt | cut -f1-4,7 | awk -F $'\t' '(NR<2){next}{print $1,$2,10^(-$4/10),int(0.5+$3*99/100),$5,$4}' OFS=$'\t' | sed -e '1iGenes\tPosition\tp-value\tSomatic\tGWAS' > 55.txt
+awk -F $'\t' '(NR>1 && $5==1){print $1}' 55.txt > trip_gwas-55.txt
 
 join --header -1 1 -2 1 -t $'\t' ../../RefGene/cytoband.txt mut_exp_permtest.txt | cut -f1-4,7 | awk -F $'\t' '(NR<2){next}{print $1,$2,10^(-$4/10),int(0.5+$3*99/100),$5,$4}' OFS=$'\t' | sed -e '1iGenes\tPosition\tp-value\tSomatic\tGWAS' > 33.txt
 awk -F $'\t' '(NR>1 && $4>0){print $1}' 33.txt > trip_mu0_permtest-33.txt
