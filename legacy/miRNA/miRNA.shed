@@ -1,0 +1,2 @@
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/miRNA/Tumor/miRNA 
+╰─$ /home/jiande/bin/gdc-client download -m gdc_manifest.2019-05-13.txt 

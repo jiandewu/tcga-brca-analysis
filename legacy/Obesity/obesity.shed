@@ -1,0 +1,11 @@
+tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/JSU-TNBC-GWAS-OBESITY-ADIPONECTIN-217GENES.txt | cut -f1 | sort -u > obesity.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(cat obesity.gene.txt /home/jiande/prjs/BreastTumor/MachineLearn/06.GWAS.TNBC.txt | sort -u | sed -e '1iGene Symbol') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/HicksRaw/result/BLIA_normal_p0.05_genes.txt) > obesity.BLIA.normal.p0.05.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 obesity.BLIA.normal.p0.05.txt | body sort) <(cut -f2- /home/jiande/prjs/BreastTumor/HicksRaw/result/BLIA_normal_exp_ProbeID_genes.txt | grep -v "///" | body sort -k1,1 -u) > obesity.BLIA.normal.exp0.05.txt
+
+
+
+join -1 1 -2 1 -t $'\t' <(cat obesity.gene.txt /home/jiande/prjs/BreastTumor/MachineLearn/06.GWAS.TNBC.txt | sort -u | sed -e '1iGene Symbol') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/HicksRaw/result/BLIS_normal_p0.05_genes.txt) > obesity.BLIS.normal.p0.05.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 obesity.BLIS.normal.p0.05.txt | body sort) <(cut -f2- /home/jiande/prjs/BreastTumor/HicksRaw/result/BLIS_normal_exp_ProbeID_genes.txt | grep -v "///" | body sort -k1,1 -u) > obesity.BLIS.normal.exp0.05.txt

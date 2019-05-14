@@ -116,3 +116,45 @@ function abs(v) {return v < 0 ? -v : v}
 {if (abs(_[$1])<abs($2)) _[$1]=$2;} END{for(v in _) print v,_[v]}
 ' OFS='\t' | wc -l
 
+mkdir TNBC_all.counts
+cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > TNBC_all.counts/${FILE}.txt \;
+done
+find TNBC_all.counts -size 0 -exec rm {} \;
+
+mkdir nonTNBC_all.counts
+cut -f2,3 nonTNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Tumor -name "${FILE}.gz" -exec gunzip -c '{}'  > nonTNBC_all.counts/${FILE}.txt \;
+done
+find nonTNBC_all.counts -size 0 -exec rm {} \;
+
+mkdir TNBC.ctrl.counts
+cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > TNBC.ctrl.counts/${FILE}.txt \;
+done
+find TNBC.ctrl.counts -size 0 -exec rm {} \;
+
+mkdir nonTNBC.ctrl.counts
+cut -f2,3 nonTNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.gz*}
+  ID=${LINE##*tcga-}
+  find /home/jiande/prjs/BreastTumor/raw_data/RNAseq_counts/Normal -name "${FILE}.gz" -exec gunzip -c '{}'  > nonTNBC.ctrl.counts/${FILE}.txt \;
+done
+find nonTNBC.ctrl.counts -size 0 -exec rm {} \;
+
+
+awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/extractColumnByName.awk <(head -1 TNBC.ctrl_all.counts.txt | tr '\t' '\n') TNBC_all.counts.txt > TNBC.Tumor.counts.txt

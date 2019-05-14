@@ -48,6 +48,11 @@ fit1 <- contrasts.fit(fit, c(-1,1))
 fit1 <- eBayes(fit1)
 volcanoplot(fit1,  main = "Normal VS TNBC")
 
+
+write.table(topTable(fit1, number=dim(fit1)[1]), file = "result/normal_TNBC_p.all.txt", sep="\t", quote = F, row.names=T)
+write.table(hdat, file = "result/normal_TNBC_exp.all.txt", sep="\t", quote = F, row.names=T)
+
+
 nrow(topTable(fit1, coef=1, number=394400, lfc=0.25, p.value = 0.001))
 probeset.list1 <- topTable(fit1, coef=1, number=394400, lfc=0.25, p.value = 0.001)
 # probeset.list2 <- topTable(fit1, coef=1, number=394399, lfc=2, p.value = 0.05)

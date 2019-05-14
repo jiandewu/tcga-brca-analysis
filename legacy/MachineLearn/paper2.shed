@@ -1,0 +1,154 @@
+comm -23 <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.5502.DE.Som.comm.gene.txt) <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.ERPBC.11399.DE.Som.comm.gene.txt) > 08.TNBC.ERPBC.1489TNBC.Som.txt
+
+comm -13 <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.5502.DE.Som.comm.gene.txt) <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.ERPBC.11399.DE.Som.comm.gene.txt) > 08.TNBC.ERPBC.7386ERPBC.Som.txt
+
+cp 08.TNBC.ERPBC.1489TNBC.Som.cyto.txt Paper2.S1A.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.txt) <(sort -k1,1 06.ERPBC.mut0.txt) > 07.ERPBC.11399.DE.Som.comm.gene.mut0.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.11399.DE.Som.comm.gene.mut0.txt) <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt) | sed -e '1iGenes\tSomatic Mutation Event\tlogFC\tP.value\tadj.P.Val' > 07.ERPBC.11399.DE.Som.comm.gene.exp.count.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 07.ERPBC.8064.DE.nonSom.gene.txt) <(sort -k1,1 06.ERPBC.tumor.normal.Pvalue.05.txt) | sed -e '1iGenes\tlogFC\tP.value\tadj.P.Val' > 07.ERPBC.8064.DE.nonSom.gene.exp.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.3,1.4,1.5,1.2' <(body sort -k1,1 <07.ERPBC.11399.DE.Som.comm.gene.exp.count.txt ) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGenes\tChromosome position') > 08.TNBC.ERPBC.11399ERPBC.Som.cyto.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 08.TNBC.ERPBC.7386ERPBC.Som.txt | sed -e '1iGenes') <(body sort -k1,1 <08.TNBC.ERPBC.11399ERPBC.Som.cyto.txt) | body sort -k6,6nr | sed -e '1iTable S1B. List of significantly differentially expressed somatic mutated genes found unique in ERPBC along with the frequency of somatic events, observed and adjusted p-values.\n' > 08.TNBC.ERPBC.7386ERPBC.Som.cyto.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f2,3,6,7 05.Pvalue.TNBC.ERPBC.gene.txt | body sort -k1,1) <(cat 08.TNBC.ERPBC.1489TNBC.Som.txt 08.TNBC.ERPBC.7386ERPBC.Som.txt | sort | sed -e '1iGene name') | awk -F $'\t' '(NR==1||$4<0.05){print}' | body sort -k1,1 -u > 09.Pvalue.05.TNBC.ERPBC.nooverlap.gene.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2,1.3,1.4' <(body sort -k1,1 <09.Pvalue.05.TNBC.ERPBC.nooverlap.gene.txt) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGene name\tChromosome position') > 09.Pvalue.05.TNBC.ERPBC.nooverlap.cyto.txt
+
+comm -12 08.TNBC.ERPBC.1489TNBC.Som.txt <(cut -f1 09.Pvalue.05.TNBC.ERPBC.nooverlap.gene.txt | tail -n+2) | wc -l
+comm -12 08.TNBC.ERPBC.7386ERPBC.Som.txt <(cut -f1 09.Pvalue.05.TNBC.ERPBC.nooverlap.gene.txt | tail -n+2) | wc -l
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,1.6,2.2' <(join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,2.2' <(sed -e '1s/Gene name/Genes/' 09.Pvalue.05.TNBC.ERPBC.nooverlap.cyto.txt | body sort -k1,1) <(tail -n+3 08.TNBC.ERPBC.1489TNBC.Som.cyto.txt | cut -f1,6 | body sort -k1,1) | sed -s '1s/Somatic/TNBC/') <(tail -n+3 08.TNBC.ERPBC.7386ERPBC.Som.cyto.txt | cut -f1,6 | body sort -k1,1) | sed -s '1s/Somatic/ERPBC/' | body sort -k5,5g | sed -e '1iTable S2. A complete list of significantly differentially expressed somatic mutated genes distinguishing patients with TNBC and ERPBC.\n' > 09.Pvalue.05.TNBC.ERPBC.nooverlap.som.cyto.txt
+
+join -1 1 -2 1 -t $'\t' <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt | sed -e '1iGenes') <(body sort -k1,1 <08.TNBC.ERPBC.11399ERPBC.Som.cyto.txt) | body sort -k6,6nr | sed -e '1iTable S3B. List of signature containing both germline and somatic mutations in ERPBC that were significantly differentially expressed between ERPBC and controls along with the somatic events, observed and adjusted p-values.\n' > 07.ERPBC.424.DE.Gem.Som.comm.gene.exp.count.cyto.txt
+
+
+
+join -1 1 -2 1 -t $'\t' <(cut -f2,3,6,7 05.Pvalue.TNBC.ERPBC.gene.txt | body sort -k1,1) <(cat <(comm -23 <(sort 07.TNBC.237.DE.Som.Gem.comm.gene.txt) <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt)) <(comm -13 <(sort 07.TNBC.237.DE.Som.Gem.comm.gene.txt) <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt)) | sort | sed -e '1iGene name') | awk -F $'\t' '(NR==1||$4<0.05){print}' | body sort -k1,1 -u > 09.Pvalue.05.TNBC.ERPBC.nooverlap.gemline.txt
+
+comm -12 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.TNBC.noERPBC.56.gem.som.txt | cut -f1 | sort) <(tail -n+2 /home/jiande/prjs/BreastTumor/MachineLearn/09.Pvalue.05.TNBC.ERPBC.nooverlap.gemline.txt | cut -f1) | wc -l
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2,1.3,1.4' <(body sort -k1,1 <09.Pvalue.05.TNBC.ERPBC.nooverlap.gemline.txt) <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGene name\tChromosome position') > 09.Pvalue.05.TNBC.ERPBC.nooverlap.gemline.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,1.6,2.2' <(join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,2.2' <(sed -e '1s/Gene name/Genes/' 09.Pvalue.05.TNBC.ERPBC.nooverlap.gemline.cyto.txt | body sort -k1,1) <(tail -n+3 08.TNBC.ERPBC.1489TNBC.Som.cyto.txt | cut -f1,6 | body sort -k1,1) | sed -s '1s/Somatic/TNBC/') <(tail -n+3 08.TNBC.ERPBC.7386ERPBC.Som.cyto.txt | cut -f1,6 | body sort -k1,1) | sed -s '1s/Somatic/ERPBC/' | body sort -k5,5g | sed -e '1iTable S3. A complete list of significantly differentially expressed germline and somatic mutated genes distinguishing patients with TNBC and ERPBC.\n' > 09.Pvalue.05.TNBC.ERPBC.nooverlap.gem.som.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,2.3,2.5,1.3,1.4,1.5,2.4,1.6,1.7,2.2' <(tail -n+3 09.Pvalue.05.TNBC.ERPBC.nooverlap.gem.som.cyto.txt | body sort -k1,1 | sed -s '1s/Genes/Gene name/') /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/gwas.event.info.txt | body sort -t $'\t' -k9,9nr -k10,10nr | sed -e '1iTable S3. A complete list of significantly differentially expressed germline and somatic mutated genes distinguishing patients with TNBC and non-TNBC.\n' > 09.Pvalue.05.TNBC.ERPBC.nooverlap.gem.event.som.cyto.txt
+
+
+join -1 1 -2 1 -t $'\t' <(tail -n+3 07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.cyto.txt | body sort -k1,1) <(comm -23 <(sort 07.TNBC.237.DE.Som.Gem.comm.gene.txt) <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt) | sort | sed -e '1iGenes') | body sort -k6,6nr | sed -e '1iTable S3C. A complete list of significantly differentially expressed germline and somatic mutated genes unique distinguishing patients with TNBC.\n' > 09.TNBC.noERPBC.56.gem.som.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+3 07.ERPBC.424.DE.Gem.Som.comm.gene.exp.count.cyto.txt | body sort -k1,1) <(comm -13 <(sort 07.TNBC.237.DE.Som.Gem.comm.gene.txt) <(sort 07.ERPBC.424.DE.Som.Gem.comm.gene.txt) | sort | sed -e '1iGenes') | body sort -k6,6nr | sed -e '1iTable S3D. A complete list of significantly differentially expressed germline and somatic mutated genes unique distinguishing patients with ERPBC.\n' > 09.ERPBC.noTNBC.243.gem.som.txt
+
+
+cat <(tail -n+4 09.ERPBC.noTNBC.243.gem.som.txt | awk -F $'\t' '{print $1, "Som & Gem"}' OFS='\t') <(comm -13 <(tail -n+4 09.ERPBC.noTNBC.243.gem.som.txt | cut -f1 | sort) <(tail -n+4 08.TNBC.ERPBC.7386ERPBC.Som.cyto.txt | awk -F $'\t' '($6>9){print $1}' | sort) | awk -F $'\t' '{print $1, "Only Som (>9)"}' OFS='\t') > 09.ERPBC.243.257.txt
+
+cat <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.TNBC.noERPBC.56.gem.som.txt | awk -F $'\t' '{print $1, "Som & Gem"}' OFS='\t') <(comm -13 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.TNBC.noERPBC.56.gem.som.txt | cut -f1 | sort) <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/08.TNBC.ERPBC.1489TNBC.Som.cyto.txt | awk -F $'\t' '($6>2){print $1}' | sort) | awk -F $'\t' '{print $1, "Only Som (>2)"}' OFS='\t') > 09.TNBC.56.99.txt
+
+
+cat <(head -909 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/GWAS_1.txt | tail -n+4 | cut -f 11,15,16,23,29 | awk -F $'\t' '{gsub(/"/,"");gene=$2";"$3;n=split(gene,a,",|;| - ");delete genes;for(i=1;i<=n;i++){gsub(" ","",a[i]);if(a[i]!="")genes[a[i]]=a[i];};for(g in genes){if(g!="NR")print g,$1,tolower($4),$5,"1";}}' OFS='\t') <(tail -n+4 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/GWAS_2.txt | cut -f 1-4 | awk -F $'\t' '{gsub(/"/,"");n=split($1,a,",|;| - ");for(i=1;i<=n;i++){gsub(" ","",a[i]);print a[i],$2,tolower($3),$4,"2";}}' OFS='\t') | sort -k1,1 -k5,5n -k4,4g | sort -k1,1 -u > gwas.info.txt
+
+cat <(head -909 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/GWAS_1.txt | tail -n+4 | cut -f 11,15,16,23,29 | awk -F $'\t' '{
+    gsub(/"/,"");gene=$2";"$3;
+    n=split(gene,a,",|;| - ");
+    delete genes;
+    for(i=1;i<=n;i++)
+    {
+        gsub(" ","",a[i]);
+        if(a[i]!="")genes[a[i]]=a[i]
+    }
+    for(g in genes)
+    {
+        if(g!="NR"&&g!="intergenic"&&g!="Intergenic")print g,$1,tolower($4),$5,"1"
+    }
+}' OFS='\t') <(tail -n+4 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/GWAS_2.txt | cut -f 1-4 | awk -F $'\t' '{
+    gsub(/"/,"");n=split($1,a,",|;| - ");
+    for(i=1;i<=n;i++)
+    {
+        gsub(" ","",a[i]);
+        print a[i],$2,tolower($3),$4,"2"
+    }
+}' OFS='\t') | sort -k1,1 | awk -F $'\t' '{
+    if(NR==1)
+    {
+        agene=$1;apos[$2]=$2;asnp[$3]=$3;apmin=$4;apmax=$4;asheet[$5]=$5
+    }
+    else
+    {
+        if($1==agene)
+        {
+            apos[$2]=$2;asnp[$3]=$3;if($4<apmin)apmin=$4;if($4>apmax)apmax=$4;asheet[$5]=$5
+        }
+        else
+        {
+            pos="";snp="";sheet="";event=0;
+            for(i in apos)pos=pos==""?i:pos";"i;
+            for(i in asnp){snp=snp==""?i:snp";"i;event=event+1;}
+            for(i in asheet)sheet=sheet==""?i:sheet";"i;
+            delete apos;
+            delete asnp;
+            delete asheet;
+            print agene,pos,snp,event,apmin,apmax,sheet;
+            agene=$1;apos[$2]=$2;asnp[$3]=$3;apmin=$4;apmax=$4;asheet[$5]=$5;
+        }
+    }
+}' OFS='\t' | sed -e '1iGene name\tRegion\tSNP_ID\tGWAS Event\tGWAS P-value\tP-val.max\tsheet' > gwas.event.info.txt
+
+
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,2.2,2.3,2.4,1.3,1.4' <(tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t2a.txt | sort -k1,1) gwas.info.txt | sort -t $'\t' -k7,7nr > /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t2aa.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,2.2,2.3,2.4,1.3,1.4' <(tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t2b.txt | sort -k1,1) gwas.info.txt | sort -t $'\t' -k7,7nr > /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t2bb.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,2.2,2.3,2.4,1.3,1.4,1.5' <(tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t3.txt | sort -k1,1) gwas.info.txt | sort -t $'\t' -k6,6g > /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/t33.txt
+
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/TNBC.56.99.txt | sort | sed -e '1iGenes') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.Express.tumor.normal.gene.txt) >07.TNBC.56.99.express.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Documents/Paper/Jiande/PAPER-2/ERPBC.243.257.txt | sort | sed -e '1iGene name') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/MachineLearn/07.ERPBC.Express.tumor.normal.gene.txt) >07.ERPBC.243.257.express.txt
+
+comm -12 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.TNBC.noERPBC.56.gem.som.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/PAM50.txt
+
+comm -12 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.ERPBC.noTNBC.243.gem.som.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/PAM50.txt
+
+comm -12 <(comm -12 /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.237.DE.Som.Gem.comm.gene.txt /home/jiande/prjs/BreastTumor/MachineLearn/07.ERPBC.424.DE.Som.Gem.comm.gene.txt | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/PAM50.txt
+
+comm -12 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.TNBC.noERPBC.56.gem.som.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/mammaprint.txt
+
+comm -12 <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/09.ERPBC.noTNBC.243.gem.som.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/mammaprint.txt
+
+comm -12 <(comm -12 /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.237.DE.Som.Gem.comm.gene.txt /home/jiande/prjs/BreastTumor/MachineLearn/07.ERPBC.424.DE.Som.Gem.comm.gene.txt | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/mammaprint.txt
+
+comm -12 <(tail -n+4 08.TNBC.ERPBC.1489TNBC.Som.cyto.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/PAM50.txt
+
+comm -12 <(tail -n+4 08.TNBC.ERPBC.7386ERPBC.Som.cyto.txt | cut -f1 | sort) /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/PAM50.txt | tr $'\n' ', '
+
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 08.TNBC.ERPBC.7386ERPBC.Som.txt) <(awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | sort -k1,1) -a1 > 08.TNBC.ERPBC.7386TNBC.Som.txt
+
+join -1 1 -2 1 -t $'\t' <(sort -k1,1 08.TNBC.ERPBC.1489TNBC.Som.txt) <(sort -k1,1 06.ERPBC.mut0.txt) -a1 > 08.TNBC.ERPBC.1489ERPBC.Som.txt
+
+join -1 1 -2 1 -t $'\t' <(join -1 1 -2 1 -t $'\t' <(sort 08.TNBC.ERPBC.1489TNBC.Som.txt | sed -e '1iGenes') <(tail -n+3 07.TNBC.5502.DE.Som.comm.gene.exp.count.cyto.txt | body sort -k1,1)) <(sed -e '1iGenes\tSomatic Mutation Event in non-TNBC' 08.TNBC.ERPBC.1489ERPBC.Som.txt) -a1 | body sort -k6,6nr | sed -e '1iTable S2A. List of significantly differentially expressed somatic mutated genes found unique in TNBC along with the frequency of somatic events, observed and adjusted p-values.\n' > 08.TNBC.ERPBC.1489TNBC.ERPBC.Som.cyto.txt
+
+join -1 1 -2 1 -t $'\t' <(join -1 1 -2 1 -t $'\t' <(sort 08.TNBC.ERPBC.7386ERPBC.Som.txt | sed -e '1iGenes') <(body sort -k1,1 <08.TNBC.ERPBC.11399ERPBC.Som.cyto.txt)) <(sed -e '1iGenes\tSomatic Mutation Event in TNBC' 08.TNBC.ERPBC.7386TNBC.Som.txt) -a1 | body sort -k6,6nr | sed -e '1iTable S2B. List of significantly differentially expressed somatic mutated genes found unique in non-TNBC along with the frequency of somatic events, observed and adjusted p-values.\n' > 08.TNBC.ERPBC.7386ERPBC.TNBC.Som.cyto.txt
+
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,1.5,2.2,2.3' <(sed -e '1s/Gene name/Genes/' 09.Pvalue.05.TNBC.ERPBC.nooverlap.cyto.txt | body sort -k1,1) <(tail -n+3 08.TNBC.ERPBC.1489TNBC.ERPBC.Som.cyto.txt | cut -f1,6,7 | body sort -k1,1) |body sort -k7,7nr -k6,6nr > 08.TNBC.nonTNBC.1156TNBC.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,1.5,2.2,2.3' <(sed -e '1s/Gene name/Genes/' 09.Pvalue.05.TNBC.ERPBC.nooverlap.cyto.txt | body sort -k1,1) <(tail -n+3 08.TNBC.ERPBC.7386ERPBC.TNBC.Som.cyto.txt | cut -f1,6,7 | body sort -k1,1) |body sort -k7,7nr -k6,6nr > 08.TNBC.nonTNBC.5731nonTNBC.cyto.txt
+
+
+join -1 1 -2 1 -t $'\t' -a1 <(tail -n+4 07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.cyto.txt | sort -k1,1) gwas.info.txt | sed -e '1iTable S3A. List of significantly differentially expressed germline and somatic mutated genes along with the somatic events, observed and adjusted p-values.\n'> 07.TNBC.237.allinfo.txt
+
+join -1 1 -2 1 -t $'\t' -a1 <(tail -n+4 07.ERPBC.424.DE.Gem.Som.comm.gene.exp.count.cyto.txt | sort -k1,1) gwas.info.txt | sed -e '1iTable S3B. List of significantly differentially expressed germline and somatic mutated genes along with the somatic events, observed and adjusted p-values.\n'> 07.ERPBC.424.allinfo.txt
+
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,1.6,2.2' <(sort -k1,1 09.TNBC.46.txt) <(sort -k1,1 06.ERPBC.mut0.txt) | sort -k7,7nr -k6,6nr > 09.TNBC.46.noERPBCsom.txt
+
+join -1 1 -2 1 -t $'\t' -a1 <(sort -k1,1 09.TNBC.46.noERPBCsom.txt) gwas.info.txt | sort -k7,7nr -k6,6nr > 09.TNBC.46.noERPBCsom.gwas.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,1.3,1.4,1.5,1.6,2.2' <(sort -k1,1 09.ERPBC.205.txt) <(awk -F $'\t' '($2>=1){print $1,$2}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | sort -k1,1) | sort -k7,7nr -k6,6nr > 09.ERPBC.205.TNBCsom.txt
+
+join -1 1 -2 1 -t $'\t' -a1 <(sort -k1,1 09.ERPBC.205.TNBCsom.txt) gwas.info.txt | sort -k7,7nr -k6,6nr > 09.ERPBC.205.TNBCsom.gwas.txt

@@ -46,14 +46,17 @@ fit1 <- contrasts.fit(fit, c(-1,1))
 fit1 <- eBayes(fit1)
 volcanoplot(fit1,  main = "BLIA vs normal")
 
+write.table(topTable(fit1, number=dim(fit1)[1]), file = "result/BLIS_normal_p.txt", sep="\t", quote = F, row.names=T)
+write.table(hdat, file = "result/BLIS_normal_exp.txt", sep="\t", quote = F, row.names=T)
+
 nrow(topTable(fit1, coef=1, number=54675, lfc=2, p.value = 0.05))
 probeset.list1 <- topTable(fit1, coef=1, number=54675, lfc=2, p.value = 0.05)
 head(probeset.list1)
-write.table(probeset.list1, file = "result/BLIS_normal_p.txt", sep="\t", quote = F, row.names=T)
+write.table(probeset.list1, file = "result/BLIS_normal_lfc2_p0.05.txt", sep="\t", quote = F, row.names=T)
 
 genes <- rownames(probeset.list1)
 head(genes)
 sign_exp <- hdat[genes,]
 head(sign_exp)
-write.table(sign_exp, file = "result/BLIS_normal_exp.txt", sep="\t", quote = F, row.names=T)
+write.table(sign_exp, file = "result/BLIS_normal_lfc2_p0.05_exp.txt", sep="\t", quote = F, row.names=T)
 

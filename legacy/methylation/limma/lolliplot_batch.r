@@ -6,7 +6,7 @@ library(readxl)
 
 # gene <- read_excel("/home/jiande/nas/Tarun_projects/prostate_cancer_new/All_info/Plot/KLK2.xlsx")
 setwd("~/prjs/BreastTumor/methylation/limma/result")
-hdat <- read.csv(file = "all_intersection_position_geneloc.txt", sep = "\t")
+hdat <- read.csv(file = "loliplot_all_position.geneloc.txt", sep = "\t")
 
 genelist <- unique(hdat$Gene)
 

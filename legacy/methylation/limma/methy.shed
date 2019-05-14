@@ -100,13 +100,69 @@ done > all_intersection_germline_position.txt
 #pos: 98021211A>G</td>
 #pos: 98021211
 
+╰─$ grep -wFf <(cut -f1 all_intersection.txt) <(tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/gwas.event.info.txt |  cut -f1,3) | 
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    gene=${line%%rs*}
+    SNPs=${line#$gene}
+    IFS=';' read -ra SNP <<< "$SNPs"
+    for i in "${SNP[@]}"; do
+        temp=$(wget -q -O- https://www.ncbi.nlm.nih.gov/snp/$i | grep -A 1 '<td>GRCh37.p13' | tr '\n' ' ')
+        chr=${temp%%</td>*}
+        chr=chr${chr#*chr }
+        pos=${temp##*g\.}
+        pos=${pos%%[A-Z]*}
+        echo $gene$SNP$'\t'$chr$'\t'$pos
+    done
+done > all_intersection_GWAS_position.txt
 
-cat <(cut -f2-4 all_intersection_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 all_intersection_mut_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') <(awk '{print "Germline",$1,$3,$4}' OFS='\t' all_intersection_germline_position.txt) | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Columns.awk i=1 j=2 > all_intersection_position.txt
+
+cat <(cut -f2-4 all_intersection_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 all_intersection_mut_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') <(awk '{print "Germline",$1,$3,$4}' OFS='\t' all_intersection_GWAS_position.txt) | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Columns.awk i=1 j=2 > all_intersection_position.txt
 
 join -1 1 -2 3 -t $'\t' <(tail -n+2 all_intersection_position.txt) <(cut -f3-5 /home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt | tail -n+2 | sort -k3,3) | sed -e '1iGene\tMutation\tChromosome\tPosition\tStart\tEnd' > all_intersection_position_geneloc.txt
 
 ╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
 ╰─$ Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/BreastTumor/methylation/limma/lolliplot_batch.r
+
+tail -n+4 /home/jiande/prjs/BreastTumor/methylation/limma/result/TNBC.Methy.Som.Rna.Germ.235.cyto.GWAS.txt | cut -f1,4,9,10 | sort -k2,2nr | head -7 | cut -f1 > loliplot.list.txt
+
+grep -wFf <(sed -e '1iHugo_Symbol' loliplot.list.txt) /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/Variant_Type.txt | awk -F $'\t' '(NR==1){split($0,a,"\t");next};{s2=""; for(i=2;i<=NF;i++) if ($i!="") s2=s2 (s2?";":"") a[i]; print $1,s2}' OFS='\t' | 
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    gene=${line%%TCGA*01}
+    files=${line#$gene}
+    for i in $(echo $files | tr ";" "\n"); do
+        grep $gene /home/jiande/prjs/BreastTumor/gdac.broadinstitute.org_BRCA.Mutation_Packager_Oncotated_Calls.Level_3.2016012800.0.0/trip/${i}.hg19.oncotator.hugo_entrez_remapped.maf.txt | cut -f1,5-7
+    done
+done | 
+uniq | sed -e '1igene\tChromosome\tStart\tEnd' > loliplot_somatic_position.txt
+
+join -1 1 -2 1 -t $'\t' <(grep -wFf <(sed -e '1iGene' loliplot.list.txt) normal_TNBC_p.all_gene.txt | awk -F $'\t' '(NR==1||$7<0.05){print}' | cut -f1,2 | body sort -k1,1) /home/jiande/prjs/BreastTumor/methylation/TCGA-A7-A0D9-01A-31D-A10P.txt | cut -f1,2,4-6 | body sort -k2,2 > loliplot_methy_position.txt
+
+# bash script
+grep -wFf <(sed -e '1iGene' loliplot.list.txt) <(tail -n+2 /home/jiande/Clouds/VWin7/Flash/Clouds/OneDrive/LSUHSC/Flash/Prjs/BreastCancer/gwas.event.info.txt |  cut -f1,3) | 
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    gene=${line%%rs*}
+    SNPs=${line#$gene}
+    IFS=';' read -ra SNP <<< "$SNPs"
+    for i in "${SNP[@]}"; do
+        temp=$(wget -q -O- https://www.ncbi.nlm.nih.gov/snp/$i | grep -A 1 '<td>GRCh37.p13' | tr '\n' ' ')
+        chr=${temp%%</td>*}
+        chr=chr${chr#*chr }
+        pos=${temp##*g\.}
+        pos=${pos%%[A-Z]*}
+        echo $gene$i$'\t'$chr$'\t'$pos
+    done
+done > loliplot_gwas_position.txt
+
+cat <(cut -f2-4 loliplot_methy_position.txt | awk '{if (NR==1) print "Mutation\t" $0;else print "Methylation\t" $0;}') <(cut -f1-3 loliplot_somatic_position.txt | tail -n+2 | awk '{$2="chr" $2;print "Somatic",$1,$2,$3}' OFS='\t') <(awk '{print "Germline",$1,$3,$4}' OFS='\t' loliplot_gwas_position.txt) | body sort -k2,2 | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Columns.awk i=1 j=2 > loliplot_all_position.txt
+
+join -1 1 -2 3 -t $'\t' <(tail -n+2 loliplot_all_position.txt) <(cut -f3-5 /home/jiande/prjs/RefGene/GRCh37_gene-symbols.txt | tail -n+2 | sort -k3,3) | sed -e '1iGene\tMutation\tChromosome\tPosition\tStart\tEnd' > loliplot_all_position.geneloc.txt
+
+Rscript /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/BreastTumor/methylation/limma/lolliplot_batch.r
+
+
+
+
+
 
 
 
@@ -147,3 +203,29 @@ tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($2!="NULL"&&$2>0.3){print $1,
 tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($2!="NULL"&&$2<-0.3){print $1,$2}' OFS='\t' | cut -f1 > Hypomethyl.txt
 tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($3!="NULL"&&$3>2){print $1}' > Upregulated.txt
 tail -n+2 Methy_RNAseq_all_FC.txt | awk -F $'\t' '($3!="NULL"&&$3<-2){print $1}' > Downregulated.txt
+
+
+
+
+
+
+
+
+
+
+╭─jiande@BIG-L08 ~/prjs/BreastTumor/methylation/limma/result  
+╰─$ join -1 1 -2 1 -t $'\t' <(body sort -k 1,1 < ../prob_gengsym_Grch37.txt) <(sed -e '1s/^/Composite Element REF\t/' normal_TNBC_p.all.txt | body sort -k 1,1) | awk -F $'\t' '($2!="."){print}' > normal_TNBC_p.all_gene.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,2.2,1.2' <(awk -F $'\t' '($7<0.05){print $2}' normal_TNBC_p.all_gene.txt | sort | uniq -c | awk -F ' ' '{print $2,$1}' OFS='\t' | sort -k1,1 | sed -e '1iGene name\tMethylation Event Count(pval<0.05)') <(tail -n+2 /home/jiande/prjs/RefGene/cytoband.txt | sort -k1,1 | sed -e '1iGene name\tChromosome position') | body sort -k3,3nr | sed -e '1iTable S2. A complete list of significantly methylated genes distinguishing patients with TNBC and Normal.\n' > Methylation_genes.count.p05.cyto.txt
+
+tail -n+4 Methylation_genes.count.p05.cyto.txt | cut -f1 > TNBC.Methy.21144.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+3 Methylation_genes.count.p05.cyto.txt | body sort -k1,1) <(join -1 1 -2 1 -t $'\t' <(comm -12 <(sort TNBC.Methy.21144.gene.txt) <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.22968.DE.gene.txt) | sort | sed -e '1iGene name') <(body sort -k1,1 </home/jiande/prjs/BreastTumor/limma/results/TNBC.normal.Pvalue.05.gene.uniq.txt)) | body sort -k3,3nr | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Swap2Columns.awk i=3 j=77 | sed -e '1iTable S3A. A complete list of significantly differentially expressed methylated genes distinguishing patients with TNBC and Normal.\n' > TNBC.Methy.RNA.14288.p.txt
+
+comm -12 <(comm -12 <(sort TNBC.Methy.21144.gene.txt) <(sort /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.22968.DE.gene.txt) | sort) <(sort /home/jiande/prjs/BreastTumor/MachineLearn/06.Som.TNBC.txt) > TNBC.Methy.Som.Rna.5365.txt
+
+join -1 1 -2 1 -t $'\t' <(join -1 1 -2 1 -t $'\t' <(sort TNBC.Methy.Som.Rna.5365.txt | sed -e '1iGene name') <(tail -n+3 TNBC.Methy.RNA.14288.p.txt | body sort -k1,1)) <(tail -n+2 /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.5502.DE.Som.comm.gene.exp.count.txt | cut -f1,2 | sort -k1,1 | sed -e '1iGene name\tSomatic Mutation Event') | body sort -k5,5g | sed -e '1iTable S4. A complete list of somatically and epigenomically altered genes distinguishing patients with TNBC and Normal.\n' > TNBC.Methy.Som.Rna.5365.cyto.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.cyto.txt | cut -f1 | sort | sed -e '1iGene name') <(tail -n+3 TNBC.Methy.Som.Rna.5365.cyto.txt | body sort -k1,1) | body sort -k5,5g | sed -e '1iTable S5. A complete list of somatically, germlinely and epigenomically altered genes distinguishing patients with TNBC and Normal.\n' > TNBC.Methy.Som.Rna.Germ.235.cyto.txt
+
+join -1 1 -2 1 -t $'\t' -a1 -e'-' -o '0,1.2,2.3,2.4,2.5,1.3,1.4,1.5,1.6,1.7,2.2' <(join -1 1 -2 1 -t $'\t' <(tail -n+4 /home/jiande/prjs/BreastTumor/MachineLearn/07.TNBC.237.DE.Gem.Som.comm.gene.exp.count.cyto.txt | cut -f1 | sort | sed -e '1iGene name') <(tail -n+3 TNBC.Methy.Som.Rna.5365.cyto.txt | body sort -k1,1)) /home/jiande/prjs/BreastTumor/MachineLearn/gwas.event.info.txt | body sort -k4,4nr | sed -e '1iTable S5. A complete list of somatically, germlinely and epigenomically altered genes distinguishing patients with TNBC and Normal.\n' > TNBC.Methy.Som.Rna.Germ.235.cyto.GWAS.txt

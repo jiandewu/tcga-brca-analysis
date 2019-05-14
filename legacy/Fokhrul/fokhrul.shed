@@ -55,3 +55,23 @@
 join -1 1 -2 1 -t $'\t' <(grep -wFf BLIA_normal_genes-BLIS.txt BLIA_normal_ProbeID_genes.txt | awk -F $'\t' '{print $2,$1}' OFS=$'\t' | sort -k1,1 | sed -e '1iID_REF\tGene_Sym') <(body sort -k1,1 < BLIA_normal_exp.txt) | cut -f2- > BLIA_normal_exp_genes-BLIS.txt
 
 join -1 1 -2 1 -t $'\t' <(grep -wFf BLIS_normal_genes-BLIA.txt BLIS_normal_ProbeID_genes.txt | awk -F $'\t' '{print $2,$1}' OFS=$'\t' | sort -k1,1 | sed -e '1iID_REF\tGene_Sym') <(body sort -k1,1 < BLIS_normal_exp.txt) | cut -f2- > BLIS_normal_exp_genes-BLIA.txt
+
+
+
+
+join -1 1 -2 1 -t $'\t' <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) <(sed -e '1s/^/Probe Set ID\t/' BLIA_normal_p.txt | body sort -k1,1) | awk -F $'\t' '($2!="---"){print}' OFS=$'\t' | body sort -u -k 1,1 > BLIA_normal_p_ProbeID_genes.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) <(sed -e '1s/^/Probe Set ID\t/' BLIA_normal_exp.txt | body sort -k1,1) | awk -F $'\t' '($2!="---"){print}' OFS=$'\t' | body sort -u -k 1,1 > BLIA_normal_exp_ProbeID_genes.txt
+
+# bug???
+body awk -F $'\t' '($6<0.05&&(index($2,"///")==0)){print}' OFS=$'\t' < BLIA_normal_p_ProbeID_genes.txt | cut -f2- | body sort -k1,1 -u  > BLIA_normal_p0.05_genes.txt
+
+
+
+join -1 1 -2 1 -t $'\t' <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) <(sed -e '1s/^/Probe Set ID\t/' BLIS_normal_p.txt | body sort -k1,1) | awk -F $'\t' '($2!="---"){print}' OFS=$'\t' | body sort -u -k 1,1 > BLIS_normal_p_ProbeID_genes.txt
+
+join -1 1 -2 1 -t $'\t' <(cut -f1,2 /home/jiande/prjs/RefGene/affymetrix_probes/HGU133Plus2.0.txt | body sort -k 1,1) <(sed -e '1s/^/Probe Set ID\t/' BLIS_normal_exp.txt | body sort -k1,1) | awk -F $'\t' '($2!="---"){print}' OFS=$'\t' | body sort -u -k 1,1 > BLIS_normal_exp_ProbeID_genes.txt
+
+# bug???
+body awk -F $'\t' '($6<0.05&&(index($2,"///")==0)){print}' OFS=$'\t' < BLIS_normal_p_ProbeID_genes.txt | cut -f2- | body sort -k1,1 -u  > BLIS_normal_p0.05_genes.txt
+
