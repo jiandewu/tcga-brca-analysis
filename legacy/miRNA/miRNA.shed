@@ -1,2 +1,33 @@
-╭─jiande@BIG-L08 ~/prjs/BreastTumor/miRNA/Tumor/miRNA 
-╰─$ /home/jiande/bin/gdc-client download -m gdc_manifest.2019-05-13.txt 
+## jiande@BIG-L08 ~/prjs/BreastTumor/miRNA/Tumor/miRNA 
+/home/jiande/bin/gdc-client download -m gdc_manifest.2019-05-13.txt 
+## ...
+
+## /home/jiande/prjs/BreastTumor/miRNA/Analysis
+## TNBC samoles
+join -1 2 -2 1 <(grep -wFf <(cut -f2- ~/prjs/BreastTumor/analyse_data/TNBC_clin_list.txt | head -1 | tr '\t' '\n') <(grep -E 'file_name|case_id' files.2019-05-13.json | awk -F':' '{print $2}' | sed -e 's/"//g;s/,//' | sed -e 'N;s/\n/\t/') | sort -k2,2) <(cut -f2- ~/prjs/BreastTumor/analyse_data/TNBC_clin_list.txt | sed -n '1p;4p' | awk -F $'\t' -f /home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/Transpose.awk OFS='\t' | sort -k1,1) | tr ' ' '\t' | grep -v "isoforms" > TNBC_patient_uuid_file_name_barcode.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if(FNR==NR){a[$1]=$1};gsub(/^.*\//,"",FILENAME);gsub(/\.mirbase.*$/,"",FILENAME);if(FNR==1) a[$1]=(a[$1] OFS FILENAME); else a[$1]=(a[$1] OFS $3);}END{for (i in a) {print a[i]}}' $(cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+while read LINE 
+do
+  FILE=${LINE%.txt*}
+  find /home/jiande/prjs/BreastTumor/miRNA/Tumor/miRNA -name "${FILE}.txt"
+done) | sort -k1,1r |body sort -k1,1 > TNBC114.miRNA2.txt
+
+# mkdir tmp
+
+# cut -f2,3 TNBC_patient_uuid_file_name_barcode.txt |\
+# while read LINE 
+# do
+#   FILE=${LINE%.txt*}
+#   ID=${LINE##*tcga-}
+#   find /home/jiande/prjs/BreastTumor/miRNA/Tumor/miRNA -name "${FILE}.txt" -exec cp {} tmp \;
+#   sed -i -e "1s/reads_per_million_miRNA_mapped/$ID/" tmp/${FILE}.txt
+# done
+
+# awk -F $'\t' 'BEGIN{OFS = FS}{if (FNR==NR) {_[FNR]=$1};_[FNR]=(_[FNR] OFS $3)}END{for (i=1; i<=FNR; i++) {print _[i]}}' tmp/*.txt > TNBC114.miRNA.txt
+
+# rm -f tmp
+
+## Normal samples
+awk -F $'\t' 'BEGIN{OFS = FS}{if(FNR==NR){a[$1]=$1};gsub(/^.*\//,"",FILENAME);gsub(/\.mirbase.*$/,"",FILENAME);if(FNR==1) a[$1]=(a[$1] OFS FILENAME); else a[$1]=(a[$1] OFS $3);}END{for (i in a) {print a[i]}}' $(find /home/jiande/prjs/BreastTumor/miRNA/Normal162/miRNA -name "*.quantification.txt") | sort -k1,1r |body sort -k1,1 > Normal104.miRNA.txt
+

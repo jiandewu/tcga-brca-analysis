@@ -1,0 +1,25 @@
+cd /home/jiande/prjs/Analysis/BreastCancer/paper_methy
+
+awk '{print $7,$5,$6}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/Variant_Type_Count.txt > TNBC.somatic.txt
+
+awk '{print $7,$5,$6}' OFS='\t' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/nontrip/Variant_Type_Count.txt > nonTNBC.somatic.txt
+
+cut -f2,7,11 /home/jiande/prjs/Analysis/BreastCancer/Methylation/Methy.FPKM_CASE/limma.DE.TNBC.Normal.gene.txt | awk '($3<0.05&&$1!="CTD"){print}' | sort -k1,1 -k3,3g | sed -e '1igene_name\tlogFC\tadjust P-value' > Methy.DE.TNBC.Normal.p05.txt
+
+// select average pvalue, ...
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1iGene_Symbol\tChromosome') <(join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/Methylation/Symbol_probeCount.txt <(awk '(NR>1){pValue[$1]+=$3;count[$1]++}END{for (i in pValue)print i,count[i],pValue[i]/count[i]}' OFS='\t' Methy.DE.TNBC.Normal.p05.txt | sort -k1,1 | sed -e '1iGene_Symbol\tDE_Sites\taverage adj.P-value')) | body sort -k4,4nr > Methy.DE.TNBC.Normal.p05.unique.txt
+
+// select min pvalue,
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1iGene_Symbol\tChromosome') <(join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/Methylation/Symbol_probeCount.txt <(awk '(NR>1){if($1!=gene){if(NR>2){print gene,count,pvalue,logFC}gene=$1;logFC=$2;pvalue=$3;count=1}else{count++}}' OFS='\t' Methy.DE.TNBC.Normal.p05.txt | sort -k1,1 | sed -e '1iGene_Symbol\tDE_Sites\tMinimal adj.P-value\tlogFC')) | body sort -k4,4nr > Methy.DE.TNBC.Normal.p05.unique.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1igene_name\tChromosome') <(cut -f1,6,10 /home/jiande/prjs/Analysis/BreastCancer/GeneExpression/FPKM.Methy_CASE/limma.DE.TNBC.Normal.txt | awk '($3<0.05){$1=$1;print}' OFS='\t' | sort -k1,1 -u | sed -e '1igene_name\tlogFC\tadjust P-value') > Ge.DE.TNBC.Normal.p05.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k1,1 < Methy.DE.TNBC.Normal.p05.unique.txt) <(sed -e '1s/Hugo/Gene/' TNBC.somatic.txt | body sort -k1,1) > 7156.Methy.Som.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k1,1 < Methy.DE.TNBC.Normal.p05.unique.txt) <(sed -e '1s/gene_name/Gene_Symbol/' Ge.DE.TNBC.Normal.p05.txt | body sort -k1,1) > 12816.Methy.Ge.txt
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,1.5,1.6,1.8,1.9,2.7,2.8' 12816.Methy.Ge.txt 7156.Methy.Som.txt > 4922.Methy.Ge.Som.txt
+
+join -1 1 -2 1 -t $'\t' 4922.Methy.Ge.Som.txt <(sed -e '1iGene_Symbol\tChromosome\tSNP\tGWAS P_value\tMutation Event' gwas.info.txt) > 228.Methy.Ge.Som.Germ.txt
+
+cut -f6,8 12816.Methy.Ge.txt | tail -n+2 | sed -e '1iMethylation\tRNAseq' > DM_DE.logFC.txt

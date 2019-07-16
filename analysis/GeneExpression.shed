@@ -1,0 +1,39 @@
+cd /home/jiande/prjs/Analysis/BreastCancer/GeneExpression/FPKM
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,2.5,2.3,2.4' <(grep "FPKM.txt" /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_foldID_filename_more.txt) <(sort -k1,1 /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_clinical.txt) | sed -e '1icaseID\tfileID\tfileName\ttype\ttnbc\trace\tethnicity' > FPKM_caseID.txt
+
+mkdir tmp
+
+for a in $(awk 'BEGIN{FS="\t"}(NR>1){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' FPKM_caseID.txt); do gunzip -c $a > tmp/${${a##*/}%.gz}; done
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){gsub(".gz","",$3);print "tmp/"$3}' FPKM_caseID.txt) |body sort -k1,1 > GeneExpression.Normal113.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="Yes"){gsub(".gz","",$3);print "tmp/"$3}' FPKM_caseID.txt) |body sort -k1,1 > GeneExpression.TNBC115.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){gsub(".gz","",$3);print "tmp/"$3}' FPKM_caseID.txt) |body sort -k1,1 > GeneExpression.nonTNBC869.txt
+
+
+
+cd /home/jiande/prjs/Analysis/BreastCancer/GeneExpression/FPKM.Methy_CASE
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,2.5,2.3,2.4' <(awk 'BEGIN{FS="\t"}(match($3,"HumanMethylation450|FPKM.txt")){if(id!=$1||type!=$4){if(FPKM==1&&Methy==1)print str;FPKM=0;Methy=0;id=$1;type=$4;str=""} if(match($3,"FPKM.txt")){FPKM=1;str=(str=="")?$0:(str "\n" $0)} else Methy=1}' /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_foldID_filename_more.txt) <(sort -k1,1 /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_clinical.txt) | sed -e '1icaseID\tfileID\tfileName\ttype\ttnbc\trace\tethnicity' > FPKM.Methy_caseID.txt
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){print $1}' FPKM.Methy_caseID.txt | sort -u | wc -l
+#83
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){gsub(".gz","",$3);print "../FPKM/tmp/"$3}' FPKM.Methy_caseID.txt) |body sort -k1,1 > GeneExpression.Normal83.txt
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="Yes"){print $1}' FPKM.Methy_caseID.txt | sort -u | wc -l
+#83
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="Yes"){gsub(".gz","",$3);print "../FPKM/tmp/"$3}' FPKM.Methy_caseID.txt) |body sort -k1,1 > GeneExpression.TNBC83.txt
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print $1}' FPKM.Methy_caseID.txt | sort -u  | wc -l
+#597
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print $1}' FPKM.Methy_caseID.txt | wc -l
+#605
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*\//,"",FILENAME);gsub(/\.FPKM.*$/,"",FILENAME);header=(header OFS FILENAME)} if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2);}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){gsub(".gz","",$3);print "../FPKM/tmp/"$3}' FPKM.Methy_caseID.txt) |body sort -k1,1 > GeneExpression.nonTNBC597.605.txt
+
+

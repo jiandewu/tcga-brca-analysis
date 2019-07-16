@@ -1,0 +1,42 @@
+cd /home/jiande/prjs/Analysis/BreastCancer/Methylation
+
+cut -f1,6 /home/jiande/prjs/RAWDATA/BreastCancer/DATA/987140de-49cc-4ec6-a013-fc5997be644f/jhu-usc.edu_BRCA.HumanMethylation450.12.lvl-3.TCGA-E2-A1IU-01A-11D-A14H-05.gdc_hg38.txt | awk 'BEGIN{OFS="\t";FS="\t|;"}($2!="."){for(i=2;i<=NF;i++){print $1,$i}}' | body sort -u | awk 'BEGIN{OFS="\t"}{gsub(/[-\.].+$/,"",$2);print $1,$2}' | body sort -u | body sort -k2,2 > probe_Symbol.txt
+
+cut -f2 probe_Symbol.txt | tail -n+2 | uniq -c | awk '{print $2,$1}' OFS='\t' | sed -e '1iGene_Symbol\tMethylation_Sites' > Symbol_probeCount.txt
+
+cd /home/jiande/prjs/Analysis/BreastCancer/Methylation/Methy.ALL_Case
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,2.5,2.3,2.4' <(grep "HumanMethylation450" /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_foldID_filename_more.txt) <(sort -k1,1 /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_clinical.txt) | sed -e '1icaseID\tfileID\tfileName\ttype\ttnbc\trace\tethnicity' > Methylation_caseID.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if(FNR==NR)a[$1]=$1; if(FNR==NR&&FNR==1)header=$1; if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);a[$1]=(a[$1] OFS FILENAME);}else a[$1]=(a[$1] OFS $2);}END{print a[header];for (i in a) {if(i!=header) print a[i]}}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation_caseID.txt) |body sort -k1,1 > Normal96.Methylation.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if(FNR==NR)a[$1]=$1; if(FNR==NR&&FNR==1)header=$1; if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);a[$1]=(a[$1] OFS FILENAME);}else a[$1]=(a[$1] OFS $2);}END{print a[header];for (i in a) {if(i!=header) print a[i]}}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="Yes"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation_caseID.txt) |body sort -k1,1 > TNBC84.Methylation.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS}{if(FNR==NR)a[$1]=$1; if(FNR==NR&&FNR==1)header=$1; if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);a[$1]=(a[$1] OFS FILENAME);}else a[$1]=(a[$1] OFS $2);}END{print a[header];for (i in a) {if(i!=header) print a[i]}}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation_caseID.txt) |body sort -k1,1 > nonTNBC608.Methylation.txt
+
+
+
+
+cd /home/jiande/prjs/Analysis/BreastCancer/Methylation/Methy.FPKM_CASE
+
+join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,2.5,2.3,2.4' <(awk 'BEGIN{FS="\t"}(match($3,"HumanMethylation450|FPKM.txt")){if(id!=$1||type!=$4){if(FPKM==1&&Methy==1)print str;FPKM=0;Methy=0;id=$1;type=$4;str=""} if(match($3,"HumanMethylation450")){Methy=1;str=(str=="")?$0:(str "\n" $0)} else FPKM=1}' /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_foldID_filename_more.txt) <(sort -k1,1 /home/jiande/prjs/RAWDATA/BreastCancer/clean/caseID_clinical.txt) | sed -e '1icaseID\tfileID\tfileName\ttype\ttnbc\trace\tethnicity' > Methylation.FPKM_caseID.txt
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){print $1}' Methylation.FPKM_caseID.txt | wc -l
+#83
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);header=(header OFS FILENAME)}else {if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2)}}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Solid Tissue Normal"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation.FPKM_caseID.txt) |body sort -k1,1 > Methylation.Normal83.txt
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);header=(header OFS FILENAME)}else {if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2)}}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="Yes"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation.FPKM_caseID.txt) |body sort -k1,1 > Methylation.TNBC83.84.txt
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print $1}' Methylation.FPKM_caseID.txt | sort -u  | wc -l
+#597
+
+awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print $1}' Methylation.FPKM_caseID.txt | wc -l
+#604
+
+awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME);gsub(/\.gdc_hg38.*$/,"",FILENAME);header=(header OFS FILENAME)}else {if(FNR==NR)a[$1]=$1; a[$1]=(a[$1] OFS $2)}}END{print header;for (i in a)print a[i]}' $(awk 'BEGIN{FS="\t";OFS="\t"}(NR>1&&$4=="Primary Tumor"&&$5=="No"){print "/home/jiande/prjs/RAWDATA/BreastCancer/DATA/"$2"/"$3}' Methylation.FPKM_caseID.txt) |body sort -k1,1 > Methylation.nonTNBC597.604.txt
+
+
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/Analysis/BreastCancer/Methylation/probe_Symbol.txt | sort -k1,1 | sed -e '1iid\tgene_name') <(body sort -k1,1 <limma.DE.TNBC.Normal.txt) | body sort -k10,10g > limma.DE.TNBC.Normal.gene.txt
+

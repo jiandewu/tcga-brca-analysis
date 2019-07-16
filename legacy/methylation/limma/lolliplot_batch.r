@@ -7,6 +7,17 @@ library(readxl)
 # gene <- read_excel("/home/jiande/nas/Tarun_projects/prostate_cancer_new/All_info/Plot/KLK2.xlsx")
 setwd("~/prjs/BreastTumor/methylation/limma/result")
 hdat <- read.csv(file = "loliplot_all_position.geneloc.txt", sep = "\t")
+# format:
+# Gene         Mutation    Chromosome Position  Start     End       
+# BAIAP2L1     Germline    chr7       98026555  97920963  98030380  
+# BAIAP2L1     Methylation chr7       98354604  97920963  98030380  
+# BAIAP2L1     Somatic     chr7       97939890  97920963  98030380  
+# CEP55        Germline    chr10      95292200  95256389  95288849  
+# CEP55        Methylation chr10      93497160  95256389  95288849  
+# CEP55        Somatic     chr10      95276744  95256389  95288849  
+# COL11A1      Germline    chr1       103149593 103342023 103574052 
+# ...
+
 
 genelist <- unique(hdat$Gene)
 

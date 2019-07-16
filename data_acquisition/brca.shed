@@ -1,0 +1,122 @@
+## all BRCA data
+# https://portal.gdc.cancer.gov/repository?facetTab=files&filters={"op":"and","content":[{"op":"in","content":{"field":"cases.primary_site","value":["Breast"]}},{"op":"in","content":{"field":"files.experimental_strategy","value":["Methylation Array","RNA-Seq","miRNA-Seq"]}},{"op":"in","content":{"field":"cases.project.project_id","value":["TCGA-BRCA"]}},{"op":"in","content":{"field":"files.access","value":["open"]}}]}
+
+# miRNA data
+# https://portal.gdc.cancer.gov/repository?facetTab=files&filters={"op":"and","content":[{"op":"in","content":{"field":"cases.primary_site","value":["Breast"]}},{"op":"in","content":{"field":"files.experimental_strategy","value":["miRNA-Seq"]}},{"op":"in","content":{"field":"cases.project.project_id","value":["TCGA-BRCA"]}},{"op":"in","content":{"field":"files.access","value":["open"]}}]}
+
+mkdir /home/jiande/prjs/RAWDATA/BreastCancer/DATA
+cd /home/jiande/prjs/RAWDATA/BreastCancer/DATA
+# awk '{if(NR>1){print "/home/jiande/bin/gdc-client download",$1}}' ../gdc_manifest.2019-05-15_miRNA.txt | sh
+/home/jiande/bin/gdc-client download -m ../gdc_manifest.2019-05-16.txt
+
+cd /home/jiande/prjs/RAWDATA/BreastCancer/clean
+awk 'BEGIN{
+    OFS="\t";
+    FS="[\t\" :]+"
+    }
+    { 
+        if($2=="file_name")
+            printf "%s\t",$3; 
+        if($2=="case_id")
+            printf "%s\t",$3; 
+        if($2=="file_id")
+            print $3 
+    }' ../files.2019-05-16.json | sort -k2,2 | awk 'BEGIN{OFS="\t"}{print $2,$3,$1}' - > caseID_foldID_filename.txt
+
+
+# 根据上面的case_id,使用TCGA提供的API获取cases的最新诊断信息:
+# 获得所有case id并存入数组,注意加sort -u去除重复,去重复后发现只有1079个case ID了,说明有重复的.
+cases_id=(`awk '{print $1}' caseID_foldID_filename.txt|sort -u`)
+# 如果没有安装jq,则sudo apt-get install jq,用于等会处理.json文件
+# 创建空文件处理diagnoses数据:
+cat /dev/null > cases_1098_diagnoese.json
+for cid in ${cases_id[@]}
+do
+    # 被注释这段代码可以提取制定key的值.
+    # echo "curl 'https://api.gdc.cancer.gov/cases/$cid?pretty=true&expand=diagnoses'" |sh|jq  '.data.diagnoses[0] | {updated_datetime: .updated_datetime,tumor_stage: .tumor_stage,age_at_diagnosis: .age_at_diagnosis,vital_status:.vital_status,morphology:.morphology,days_to_death:.days_to_death}'
+    
+    #提取case的diagnoses的所有key及value:
+    echo "curl 'https://api.gdc.cancer.gov/cases/$cid?pretty=true&expand=diagnoses'" |sh|jq '.data | {case_id,diagnoses}' |awk '{print }' >> ../cases_1098_diagnoese.json
+done
+# https://api.gdc.cancer.gov/cases/43c0bec6-6fac-47b1-83cb-200a15a932be?pretty=true&expand=annotations
+
+
+#根据case ID创建过滤条件文件获得每个case的days to death:
+cat > payload <<EOF
+{
+    "filters":{
+        "op":"in",
+        "content":{
+            "field":"cases.case_id",
+            "value":[
+
+EOF
+# 将case ID写入条件:
+row_num=`wc -l caseID_foldID_filename.txt | awk '{print $1}' -`
+awk -v row_num=$row_num '{if(NR<row_num)printf "\"%s\",\n",$1; if(NR==row_num)printf "\"%s\"\n",$1}' caseID_foldID_filename.txt >> payload
+# 创建条件结尾:
+cat >> payload <<EOF
+      ]
+   }
+    },
+    "format":"TSV",
+    "size":"10000",
+    "pretty":"true",
+    "fields":"exposures.bmi,exposures.height,exposures.weight,exposures.years_smoked,diagnoses.age_at_diagnosis,diagnoses.classification_of_tumor,diagnoses.created_datetime,diagnoses.days_to_birth,diagnoses.days_to_death,diagnoses.days_to_last_follow_up,diagnoses.days_to_last_known_disease_status,diagnoses.days_to_recurrence,diagnoses.diagnosis_id,diagnoses.last_known_disease_status,diagnoses.morphology,diagnoses.primary_diagnosis,diagnoses.prior_malignancy,diagnoses.progression_or_recurrence,diagnoses.site_of_resection_or_biopsy,diagnoses.state,diagnoses.submitter_id,diagnoses.tissue_or_organ_of_origin,diagnoses.tumor_grade,diagnoses.tumor_stage,diagnoses.updated_datetime,diagnoses.vital_status,diagnoses.treatments.created_datetime,diagnoses.treatments.days_to_treatment,diagnoses.treatments.state,diagnoses.treatments.submitter_id,diagnoses.treatments.therapeutic_agents,diagnoses.treatments.treatment_id,diagnoses.treatments.treatment_intent_type,diagnoses.treatments.treatment_or_therapy,diagnoses.treatments.updated_datetime",
+    "expand":"demographic"
+}
+EOF
+
+# 使用curl命令调用条件payload获取1079个cases的diagnoses:
+curl --request POST --header "Content-Type: application/json" --data @payload 'https://api.gdc.cancer.gov/cases' > ../cases_1098_diagnoese.tsv
+
+# 根据file id使用TCGA 的API提取每个file的tsv格式的样本信息(主要是样本的类型:tumor还是normal)
+#根据file ID创建过滤条件文件:
+cat > payload <<EOF
+{
+    "filters":{
+        "op":"in",
+        "content":{
+            "field":"files.file_id",
+            "value":[
+
+EOF
+# 将case ID写入条件:
+row_num=`wc -l caseID_foldID_filename.txt | awk '{print $1}' -`
+awk -v row_num=$row_num '{if(NR<row_num)printf "\"%s\",\n",$2; if(NR==row_num)printf "\"%s\"\n",$2}' caseID_foldID_filename.txt >> payload
+# 创建条件结尾:
+cat >> payload <<EOF
+      ]
+   }
+    },
+    "format":"TSV",
+    "fields":"file_id,file_name,cases.submitter_id,cases.case_id,data_category,data_type,cases.samples.tumor_descriptor,cases.samples.tissue_type,cases.samples.sample_type,cases.samples.submitter_id,cases.samples.sample_id,cases.samples.portions.analytes.aliquots.aliquot_id,cases.samples.portions.analytes.aliquots.submitter_id",
+    "size":"10000",
+    "pretty":"true"
+}
+EOF
+
+# 如果是用第三列的file ID,过滤条件里的field要修改为file_id_raw,
+curl --request POST --header "Content-Type: application/json" --data @payload 'https://api.gdc.cancer.gov/files' > ../files_1098_diagnoese.tsv
+
+join -1 1 -2 2 -t $'\t' -o '2.1,0,2.3,1.2,1.4,1.3' <(awk 'BEGIN{FS="\t";OFS="\t"}(NR!=1){print $8,$3,$2,$5}' ../files_1098_diagnoese.tsv | sort -k1,1) <(sort -k2,2 caseID_foldID_filename.txt) | sort -t $'\t' -k1,1 -k4,4 | sed -e '1icaseID\tfileID\tfileName\ttype\tbarcode\tcategary' > caseID_foldID_filename_more.txt
+
+
+# In the clinical data, the TCGA doesn't specifically have a field for triple negative status, 
+# so, you have to infer it from the patient clinical data. 
+# The best place to download the clinical data in flat-file format is actually on the GDC Legacy Archive. 
+# https://portal.gdc.cancer.gov/legacy-archive/search/f
+# 1. Determine samples that are TNBC (triple-negative breast cancer)
+# Under Cases -> Primary Site, select 'Breast'
+# Under Cases -> Project, select 'TCGA-BRCA'
+# Then make other selections based on your interest 
+# (for example, male or female breast cancer?; breast cancer in specific ethnic groups?)
+# Under Files -> Data Category, select 'Clinical'
+# Under Files -> Data Format, select 'Biotab'
+# Download the file called nationwidechildrens.org_clinical_patient_brca.txt
+# In this file, look for the columns 'er_status_by_ihc', 'pr_status_by_ihc', 'her2_status_by_ihc', 
+# which will allow you to identify the sample UUIDs and 
+# TCGA barcodes that relate to triple-negative breast cancer (TNBC)
+# 2. Integrate the clinical data with the expression data
+# pull out the CASE ID (which is the bcr_patient_uuid) which used to identify the patients.
+awk 'BEGIN{FS="\t";OFS="\t"}(NR!=2&&NR!=3){if($44=="Negative"&&$50=="Negative"&&$56=="Negative")TNBC="Yes";else TNBC="[Not Evaluated]";if($44=="Positive"||$50=="Positive"||$56=="Positive")TNBC="No";if(NR==1)TNBC="tnbc"; print tolower($1),$7,$9,$10,TNBC,$11,$14,$16,$17,$18,$6,$20,$21,$2,$112,$44,$50,$56}'  "../patient clinical data_20190516_154052.191662/735bc5ff-86d1-421a-8693-6e6f92055563/nationwidechildrens.org_clinical_patient_brca.txt" | body sort -k1,1 > caseID_clinical.txt
