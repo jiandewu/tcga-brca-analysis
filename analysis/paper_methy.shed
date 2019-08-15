@@ -23,3 +23,7 @@ join -1 1 -2 1 -t $'\t' -o '0,1.2,1.3,1.4,1.5,1.6,1.8,1.9,2.7,2.8' 12816.Methy.G
 join -1 1 -2 1 -t $'\t' 4922.Methy.Ge.Som.txt <(sed -e '1iGene_Symbol\tChromosome\tSNP\tGWAS P_value\tMutation Event' gwas.info.txt) > 228.Methy.Ge.Som.Germ.txt
 
 cut -f6,8 12816.Methy.Ge.txt | tail -n+2 | sed -e '1iMethylation\tRNAseq' > DM_DE.logFC.txt
+
+join -1 1 -1 1 -t $'\t' <(comm -23 <(cut -f1 4922.Methy.Ge.Som.txt) <(cut -f1 228.Methy.Ge.Som.Germ.txt) | sort) <(cut -f1,4,9 4922.Methy.Ge.Som.txt | sort -k1,1) | sort -k3,3nr -k2nr | sed -e '1iGene\tMethy Event\tSomatic Event' > pathway-4694.SortbySomaticEvent.txt
+
+join -1 1 -1 1 -t $'\t' <(cut -f1,4 12816.Methy.Ge.txt | sort -k1,1) <(join -1 1 -1 1 -t $'\t' <(comm -12 <(comm -23 <(cut -f1 12816.Methy.Ge.txt) <(cut -f1 228.Methy.Ge.Som.Germ.txt) | sort) <(cut -f1 gwas.info.txt | sort)) <(cut -f1,5 gwas.info.txt | sort -k1,1)) | sort -k3,3nr -k2nr | sed -e '1iGene\tMethy Event\tGWAS Event' > pathway-259.SortbyGermlineEvent.txt
