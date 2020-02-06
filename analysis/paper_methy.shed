@@ -27,3 +27,50 @@ cut -f6,8 12816.Methy.Ge.txt | tail -n+2 | sed -e '1iMethylation\tRNAseq' > DM_D
 join -1 1 -1 1 -t $'\t' <(comm -23 <(cut -f1 4922.Methy.Ge.Som.txt) <(cut -f1 228.Methy.Ge.Som.Germ.txt) | sort) <(cut -f1,4,9 4922.Methy.Ge.Som.txt | sort -k1,1) | sort -k3,3nr -k2nr | sed -e '1iGene\tMethy Event\tSomatic Event' > pathway-4694.SortbySomaticEvent.txt
 
 join -1 1 -1 1 -t $'\t' <(cut -f1,4 12816.Methy.Ge.txt | sort -k1,1) <(join -1 1 -1 1 -t $'\t' <(comm -12 <(comm -23 <(cut -f1 12816.Methy.Ge.txt) <(cut -f1 228.Methy.Ge.Som.Germ.txt) | sort) <(cut -f1 gwas.info.txt | sort)) <(cut -f1,5 gwas.info.txt | sort -k1,1)) | sort -k3,3nr -k2nr | sed -e '1iGene\tMethy Event\tGWAS Event' > pathway-259.SortbyGermlineEvent.txt
+
+
+## nonTNBC
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1igene_name\tChromosome') <(cut -f1,6,10 /home/jiande/prjs/Analysis/BreastCancer/GeneExpression/FPKM.Methy_CASE/limma.DE.nonTNBC.Normal.txt | awk '($3<0.05){$1=$1;print}' OFS='\t' | sort -k1,1 -u | sed -e '1igene_name\tlogFC\tadjust P-value') > Ge.DE.nonTNBC.Normal.p05.txt
+
+cut -f2,7,11 /home/jiande/prjs/Analysis/BreastCancer/Methylation/Methy.FPKM_CASE/limma.DE.nonTNBC.Normal.gene.txt | awk '($3<0.05&&$1!="CTD"){print}' | sort -k1,1 -k3,3g | sed -e '1igene_name\tlogFC\tadjust P-value' > Methy.DE.nonTNBC.Normal.p05.txt
+
+// select min pvalue,
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1iGene_Symbol\tChromosome') <(join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/Methylation/Symbol_probeCount.txt <(awk '(NR>1){if($1!=gene){if(NR>2){print gene,count,pvalue,logFC}gene=$1;logFC=$2;pvalue=$3;count=1}else{count++}}' OFS='\t' Methy.DE.nonTNBC.Normal.p05.txt | sort -k1,1 | sed -e '1iGene_Symbol\tDE_Sites\tMinimal adj.P-value\tlogFC')) | body sort -k4,4nr > Methy.DE.nonTNBC.Normal.p05.unique.txt
+
+join -1 1 -2 1 -t $'\t' <(body sort -k1,1 < Methy.DE.nonTNBC.Normal.p05.unique.txt) <(sed -e '1s/gene_name/Gene_Symbol/' Ge.DE.nonTNBC.Normal.p05.txt | body sort -k1,1) > 13460.Methy.Ge.nonTNBC.txt
+
+join -1 1 -2 1 -t $'\t' 12816.Methy.Ge.txt 13460.Methy.Ge.nonTNBC.txt > 10365.Methy.Ge.both.txt
+
+grep -vwf <(cut -f1 10365.Methy.Ge.both.txt | tail -n+2) 13460.Methy.Ge.nonTNBC.txt > 3095.Methy.Ge.nonTNBC.txt
+
+grep -vwf <(cut -f1 10365.Methy.Ge.both.txt | tail -n+2) 12816.Methy.Ge.txt > 2451.Methy.Ge.TNBC.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1igene_name\tChromosome') <(cut -f1,6,10 /home/jiande/prjs/Analysis/BreastCancer/GeneExpression/FPKM.Methy_CASE/limma.DE.TNBC.nonTNBC.txt | awk '($3<0.05){$1=$1;print}' OFS='\t' | sort -k1,1 -u | sed -e '1igene_name\tlogFC\tadjust P-value') > Ge.DE.TNBC.nonTNBC.p05.txt
+
+#grep -wf <(echo gene_name | cat - <(cut -f1 2451.Methy.Ge.TNBC.txt | tail -n+2) <(cut -f1 3095.Methy.Ge.nonTNBC.txt | tail -n+2)) Ge.DE.TNBC.nonTNBC.p05.txt > 4675.Ge.DE.TNBC.nonTNBC.MethyDiff.txt
+
+grep -wf <(echo gene_name | cat - <(cut -f1 2451.Methy.Ge.TNBC.txt | tail -n+2)) Ge.DE.TNBC.nonTNBC.p05.txt > 2179.Ge.DE.TNBC.nonTNBC.fromTNBCMethy.txt
+
+grep -wf <(echo gene_name | cat - <(cut -f1 3095.Methy.Ge.nonTNBC.txt | tail -n+2)) Ge.DE.TNBC.nonTNBC.p05.txt > 2498.Ge.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt
+
+cut -f2,7,11 /home/jiande/prjs/Analysis/BreastCancer/Methylation/Methy.FPKM_CASE/limma.DE.TNBC.nonTNBC.gene.txt | awk '($3<0.05&&$1!="CTD"){print}' | sort -k1,1 -k3,3g | sed -e '1igene_name\tlogFC\tadjust P-value' > Methy.DE.TNBC.nonTNBC.p05.txt
+
+// select min pvalue,
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/RefGene/cytoband_tarun.txt | sort -k1,1 | sed -e '1iGene_Symbol\tChromosome') <(join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/Methylation/Symbol_probeCount.txt <(awk '(NR>1){if($1!=gene){if(NR>2){print gene,count,pvalue,logFC}gene=$1;logFC=$2;pvalue=$3;count=1}else{count++}}' OFS='\t' Methy.DE.TNBC.nonTNBC.p05.txt | sort -k1,1 | sed -e '1iGene_Symbol\tDE_Sites\tMinimal adj.P-value\tlogFC')) | body sort -k4,4nr > Methy.DE.TNBC.nonTNBC.p05.unique.txt
+
+grep -wf <(echo Gene_Symbol | cat - <(cut -f1 2451.Methy.Ge.TNBC.txt | tail -n+2)) Methy.DE.TNBC.nonTNBC.p05.unique.txt > 2378.Methy.DE.TNBC.nonTNBC.fromTNBCMethy.txt
+
+grep -wf <(echo Gene_Symbol | cat - <(cut -f1 3095.Methy.Ge.nonTNBC.txt | tail -n+2)) Methy.DE.TNBC.nonTNBC.p05.unique.txt > 3010.Methy.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt
+
+join -1 1 -2 1 -t $'\t' <(cat 2179.Ge.DE.TNBC.nonTNBC.fromTNBCMethy.txt <(tail -n+2 2498.Ge.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt) | body sort -k1,1 | sed -e '1s/gene_name/Gene_Symbol/') <(cat 2378.Methy.DE.TNBC.nonTNBC.fromTNBCMethy.txt <(tail -n+2 3010.Methy.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt) | body sort -k1,1) > 4400.Methy.Ge.both.fromnonTNBCMethy.txt
+
+join -1 1 -2 1 -t $'\t' <(join -1 1 -2 1 -t $'\t' <(sed -e '1s/Gene_Symbol/Gene/' 4400.Methy.Ge.both.fromnonTNBCMethy.txt) <(sed -e '1s/Hugo_Symbol/Gene/' TNBC.somatic.txt | body sort -k1,1)) <(sed -e '1s/Hugo_Symbol/Gene/' nonTNBC.somatic.txt | body sort -k1,1) | cut -f1-4,6- > 1547.E.M.S.both.txt
+
+join -1 1 -2 1 -t $'\t' <(sed -e '1s/Gene_Symbol/gene/' 4400.Methy.Ge.both.fromnonTNBCMethy.txt) <(sed -e '1s/Hugo_Symbol/gene/' TNBC.somatic.txt | body sort -k1,1) | grep -vwf <(cut -f1 1547.E.M.S.both.txt) | body sort -k11,11gr | cut -f1-4,6- > 177.DE.DM.onlyTNBCSom.txt
+
+join -1 1 -2 1 -t $'\t' <(sed -e '1s/Gene_Symbol/gene/' 4400.Methy.Ge.both.fromnonTNBCMethy.txt) <(sed -e '1s/Hugo_Symbol/gene/' nonTNBC.somatic.txt | body sort -k1,1) | grep -vwf <(cut -f1 1547.E.M.S.both.txt) | body sort -k11,11gr | cut -f1-4,6- > 2012.DE.DM.onlyNonTNBCSom.txt
+
+cut -f1 177.DE.DM.onlyTNBCSom.txt > 177.DE.DM.onlyTNBCSom.list.txt
+cut -f1 2012.DE.DM.onlyNonTNBCSom.txt > 2012.DE.DM.onlyNonTNBCSom.list.txt
+awk '($9>4){print $1}' 2012.DE.DM.onlyNonTNBCSom.txt > 435.DE.DM.onlyNonTNBCSomGE5.txt

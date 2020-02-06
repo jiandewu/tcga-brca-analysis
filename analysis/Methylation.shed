@@ -40,3 +40,7 @@ awk -F $'\t' 'BEGIN{OFS = FS;header="ID"}{if(FNR==1){gsub(/^.*TCGA-/,"",FILENAME
 
 join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/Analysis/BreastCancer/Methylation/probe_Symbol.txt | sort -k1,1 | sed -e '1iid\tgene_name') <(body sort -k1,1 <limma.DE.TNBC.Normal.txt) | body sort -k10,10g > limma.DE.TNBC.Normal.gene.txt
 
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/Analysis/BreastCancer/Methylation/probe_Symbol.txt | sort -k1,1 | sed -e '1iid\tgene_name') <(body sort -k1,1 <limma.DE.nonTNBC.Normal.txt) | body sort -k10,10g > limma.DE.nonTNBC.Normal.gene.txt
+
+join -1 1 -2 1 -t $'\t' <(tail -n+2 /home/jiande/prjs/Analysis/BreastCancer/Methylation/probe_Symbol.txt | sort -k1,1 | sed -e '1iid\tgene_name') <(body sort -k1,1 <limma.DE.TNBC.nonTNBC.txt) | body sort -k10,10g > limma.DE.TNBC.nonTNBC.gene.txt
+
