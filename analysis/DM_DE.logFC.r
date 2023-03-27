@@ -21,10 +21,10 @@ data1$Colour[data1$Methylation <= -1 & data1$RNAseq <= -2]="brown"
 
 
 
-plot(data1$Methylation, data1$RNAseq, main="TNBC vs Normal", 
-     xlab="Methylation (LogFC)", ylab="RNAseq (LogFC)", col=data1$Colour , pch=19, cex=.3
-     )
+plot(data1$Methylation, data1$RNAseq, col=data1$Colour , pch=19, cex=.3, xlab = "", ylab = "")
 
+title("TNBC vs Normal", cex.main = 2, col.main= "black",
+      xlab="Methylation (LogFC)", ylab="RNAseq (LogFC)", cex.lab=1.5)
 
 abline(v= -1, col="red")
 abline(v= 1, col="red")
@@ -40,6 +40,6 @@ legend2 <- c(paste("Up-regulated (",sum(data1$Colour=="red"),")",sep = ""),
              paste("Hypo-methyl, Up-regulated +\nHyper-methyl,Down-regulated (",sum(data1$Colour=="blue"),")",sep = ""),
              paste("Hyper-methylated (",sum(data1$Colour=="orange"),")",sep = ""))
 legend("bottomright", inset=.02, title="Legend",
-      legend=legend2, fill=legend1, cex=0.8)
+      legend=legend2, fill=legend1, cex=1.5)
 
 # colors()

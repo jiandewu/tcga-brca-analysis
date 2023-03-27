@@ -1,0 +1,15 @@
+join -1 1 -2 1 -t $'\t' <(sed -e '1s/GENEID/gene_name/' /home/jiande/prjs/RAWDATA/BLIAvsBLIS/LIST-DNA_repair-GENES.txt) /home/jiande/prjs/Analysis/BreastCancer/paper_methy/Ge.DE.TNBC.Normal.p05.txt > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_repair.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_repair.txt <(sed -e '1s/Hugo_sym/gene_name/' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | cut -f1,2 | head -7660 | body sort -k1,1) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_Mu.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_repair.txt <(sed -e '1igene_name' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas.txt | body sort -k1,1) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_Gwas.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_Mu.txt <(sed -e '1igene_name' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas.txt | body sort -k1,1) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair.Mu_Gwas.txt
+
+join -1 1 -2 1 -t $'\t' <(sed -e '1igene_name' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/gwas.txt | body sort -k1,1) /home/jiande/prjs/Analysis/BreastCancer/paper_methy/Ge.DE.TNBC.Normal.p05.txt > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_Gwas.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_Mu.txt <(cut -f1 /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_Gwas.txt) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_DE.Gwas.Mu.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_Gwas.txt <(sed -e '1s/Hugo_sym/gene_name/' /home/jiande/prjs/BreastTumor/combi_gene_exp/Analysis/trip/mut_exp.txt | cut -f1,2 | head -7660 | body sort -k1,1) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.Gwas_Mu.txt
+
+join -1 1 -2 1 -t $'\t' /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_repair.txt <(cut -f1 /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE_Gwas.txt) > /home/jiande/prjs/Analysis/BreastCancer/RepaireDNA/DE.repair_DE.Gwas.txt

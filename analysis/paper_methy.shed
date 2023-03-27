@@ -74,3 +74,6 @@ join -1 1 -2 1 -t $'\t' <(sed -e '1s/Gene_Symbol/gene/' 4400.Methy.Ge.both.fromn
 cut -f1 177.DE.DM.onlyTNBCSom.txt > 177.DE.DM.onlyTNBCSom.list.txt
 cut -f1 2012.DE.DM.onlyNonTNBCSom.txt > 2012.DE.DM.onlyNonTNBCSom.list.txt
 awk '($9>4){print $1}' 2012.DE.DM.onlyNonTNBCSom.txt > 435.DE.DM.onlyNonTNBCSomGE5.txt
+
+
+/home/jiande/Clouds/Dropbox/Documents/Gitlab/LSUHSC/WorkCodes/bin/full-outer-join.awk HEADER=1 <(cat 2179.Ge.DE.TNBC.nonTNBC.fromTNBCMethy.txt <(tail -n+2 2498.Ge.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt) | body sort -k1,1 | sed -e '1s/gene_name/Gene_Symbol/') <(cat 2378.Methy.DE.TNBC.nonTNBC.fromTNBCMethy.txt <(tail -n+2 3010.Methy.DE.TNBC.nonTNBC.fromnonTNBCMethy.txt) | body sort -k1,1) | cut -f1-3,9 | awk 'BEGIN {FS = OFS = "\t"}{if($3=="NULL")$3="Not Sig."; else if($3<0)$3="Down"; else $3="Up";if($4=="NULL")$4="Not Sig."; else if($4<0)$4="Hypo"; else $4="Hyper";print}' | sed -e '1s/Up/Diff Exp./' -e '1s/Hyper/Diff Methy./' > 5665.binary.txt

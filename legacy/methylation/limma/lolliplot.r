@@ -38,7 +38,7 @@ legend <- gsub("Methylation", "green", gsub("Somatic", "blue", gsub("Germline", 
 # names(legend) <- c("Germline","Somatic", "Methylation")
 names(legend) <- as.character(unique(gene$Mutation))
 
-# lolliplot(KLK2, features, ranges = GRanges("chr17", IRanges(51364600, 51393200))
+# lolliplot(COL5A2, features, ranges = GRanges("chr17", IRanges(51364600, 51393200))
 #           , yaxis=FALSE, legend=legend)
 lolliplot(gene_name, features, ranges = GRanges(chromo, IRanges(start-2, end+2))
           , yaxis=FALSE, ylab=as.character(genelist[genespec]), rescale=TRUE, legend=legend)
