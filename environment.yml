@@ -1,0 +1,46 @@
+name: tcga-brca-analysis
+
+channels:
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - r-base=4.4
+  - pandoc
+  - gdc-client
+  - r-biocmanager
+
+  # CRAN packages used by the analysis scripts
+  - r-data.table
+  - r-doparallel
+  - r-foreach
+  - r-ggplot2
+  - r-gplots
+  - r-matrixstats
+  - r-pheatmap
+  - r-rcolorbrewer
+  - r-readr
+  - r-readxl
+  - r-rgl
+  - r-stringi
+  - r-stringr
+
+  # Bioconductor packages used by the analysis scripts
+  - bioconductor-biomart
+  - bioconductor-dmrcate
+  - bioconductor-edger
+  - bioconductor-glimma
+  - bioconductor-gviz
+  - bioconductor-homo.sapiens
+  - bioconductor-illuminahumanmethylation450kanno.ilmn12.hg19
+  - bioconductor-illuminahumanmethylation450kmanifest
+  - bioconductor-limma
+  - bioconductor-methylmix
+  - bioconductor-minfi
+  - bioconductor-minfidata
+  - bioconductor-missmethyl
+  - bioconductor-preprocesscore
+  - bioconductor-tcgabiolinks
+  - bioconductor-trackviewer
+
+  # Install riskyr from CRAN after creating the environment.

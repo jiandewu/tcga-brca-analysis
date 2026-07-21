@@ -1,0 +1,68 @@
+# R session and IDE state
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rproj
+
+# Local environments and credentials
+renv/library/
+renv/staging/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Raw and controlled data
+data/
+raw_data/
+**/DATA/
+**/raw/
+**/Tumor/
+**/Normal*/
+
+# Sequencing and genomics intermediates
+*.bam
+*.bai
+*.sam
+*.cram
+*.crai
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.idat
+*.idat.gz
+
+# Generated results and temporary files
+results/
+output/
+outputs/
+**/tmp/
+*.Rout
+*.log
+*.nb.html
+
+# Compiled artifacts
+*.out
+*.o
+*.so
+*.a
+
+# Private publication materials
+analysis/Paper_ML/
+**/manuscript/
+private-documents/
+*.docx
+*.pdf
+~$*.docx
+~$*.xlsx
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*~
+*.swp
